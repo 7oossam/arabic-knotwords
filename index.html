@@ -12,12 +12,21 @@
         <h1>كلمات متشابكة</h1>
         <div class="stats-container">
             <div id="floor-display">الطابق: <span id="floor-level">1</span></div>
+            <div id="hints-display">
+                <button id="btn-hint" class="hint-btn" title="استخدم تلميح">
+                    💡 <span id="hints-left">3</span>
+                </button>
+            </div>
             <div id="hearts-display">القلوب: <span id="hearts-text">❤️❤️❤️❤️❤️</span></div>
         </div>
     </header>
 
     <div id="theme-display" class="theme-container">
         الموضوع: <span id="theme-text">...</span>
+    </div>
+
+    <div id="clue-display" class="clue-container" style="display: none;">
+        <span id="clue-text"></span>
     </div>
 
     <main>

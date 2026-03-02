@@ -2,6 +2,8 @@ const puzzles = {
     easy: {
         theme: "الحياة اليومية", rows: 4, cols: 4,
         solution: [['ع', 'م', 'ا', 'ل'], ['ل', 'ع', 'ب', 'ه'], ['ي', 'ن', 'ا', 'م'], ['م', 'ى', 'ت', 'ا']],
+        rowClues: ["أشخاص يقومون بجهد بدني أو فني مقابل أجر", "نشاط ترفيهي أو أداة للتسلية", "حالة من الراحة والسكون تتوقف فيها الحواس", "توفي وانتهى أجله"],
+        colClues: ["علم ومصدر للمعرفة", "معنى أو دلالة", "النبات ينبت ويكبر", "لماذا (استفهام)"],
         regions: [
             { id: 'r0', cells: [[0,0], [0,1], [1,0]], letters: ['ع', 'م', 'ل'] },
             { id: 'r1', cells: [[0,2], [0,3], [1,2], [1,3]], letters: ['ا', 'ل', 'ب', 'ه'] },
@@ -13,6 +15,8 @@ const puzzles = {
     medium: {
         theme: "شخصيات وصفات", rows: 5, cols: 5,
         solution: [['م', 'ك', 'ت', 'و', 'ب'], ['ح', 'ا', 'ر', 'س', 'ه'], ['م', 'ح', 'ب', 'و', 'ب'], ['د', 'ا', 'خ', 'ل', 'ي'], ['س', 'ي', 'ر', 'ت', 'ه']],
+        rowClues: ["رسالة ورقية أو نص مدون", "الشخص الذي يقوم بالحماية والمراقبة", "شخص ينال إعجاب الآخرين وودهم", "القسم الباطني أو الذي في الداخل", "تاريخ حياة الشخص أو مساره"],
+        colClues: ["ممدد ومدعوم", "عكس كذب", "شيء يرسل وينتشر", "وسيلة للتواصل أو السؤال", "مرغوب أو مطلوب"],
         regions: [
             { id: 'r0', cells: [[0,0], [0,1], [1,0], [2,0]], letters: ['م', 'ك', 'ح', 'م'] },
             { id: 'r1', cells: [[0,2], [0,3], [0,4], [1,4]], letters: ['ت', 'و', 'ب', 'ه'] },
@@ -26,6 +30,8 @@ const puzzles = {
     large: {
         theme: "التكنولوجيا والبرمجة", rows: 6, cols: 6,
         solution: [['م', 'س', 'ت', 'ق', 'ب', 'ل'], ['ت', 'ع', 'ل', 'ي', 'م', 'ي'], ['ب', 'ر', 'ن', 'ا', 'م', 'ج'], ['ح', 'ا', 'س', 'و', 'ب', 'ي'], ['ت', 'ط', 'ب', 'ي', 'ق', 'ي'], ['م', 'ب', 'ر', 'م', 'ج', 'ي']],
+        rowClues: ["الزمن الآتي الذي لم يحدث بعد", "متعلق بالدراسة والمدارس", "مجموعة تعليمات تنفذها الحواسيب", "متعلق بجهاز الكمبيوتر", "برنامج عملي للهواتف الذكية", "الشخص الذي يكتب الأكواد"],
+        colClues: ["ما يتم كتابته (مبني للمجهول)", "السرعة والعجلة", "نوع من أنواع التعليم", "المسؤول عن تقييم الأداء", "مكان تجمع المعرفة", "النتيجة النهائية"],
         regions: [
             { id: 'r0', cells: [[0,0], [0,1], [1,0], [1,1], [2,0]], letters: ['م', 'س', 'ت', 'ع', 'ب'] },
             { id: 'r1', cells: [[0,2], [0,3], [1,2], [1,3]], letters: ['ت', 'ق', 'ل', 'ي'] },
@@ -49,6 +55,8 @@ let selectedCell = null;
 let playerRelics = [];
 let chiselActive = false;
 let chiselUses = 0;
+let hintsLeft = 3;
+let hintModeActive = false;
 
 const availableRelics = [
     { id: 'extra_heart', title: 'قلب إضافي', desc: 'استعد خطأ واحد فورا', type: 'passive' },
@@ -60,13 +68,40 @@ document.addEventListener("DOMContentLoaded", () => {
     setupNextButton();
     setupSubmitButton();
     setupRestartButton();
+    setupHintButton();
     updateStatsUI();
     loadPuzzleForCurrentFloor();
 });
 
+function setupHintButton() {
+    const hintBtn = document.getElementById('btn-hint');
+    hintBtn.addEventListener('click', () => {
+        if (hintsLeft > 0 && !hintModeActive) {
+            hintModeActive = true;
+            hintBtn.classList.add('active');
+            document.getElementById('region-letters').innerText = 'اختر خلية لإظهار تلميحات الصف والعمود';
+
+            // clear active selections
+            selectedCell = null;
+            renderBoardSelections();
+            updateKeyboard();
+        } else if (hintModeActive) {
+            // Cancel hint mode
+            hintModeActive = false;
+            hintBtn.classList.remove('active');
+            document.querySelectorAll('.hint-arrow').forEach(el => el.remove());
+            document.getElementById('region-letters').innerText = 'الرجاء اختيار منطقة';
+            updateKeyboard();
+        }
+    });
+}
+
 function updateStatsUI() {
     document.getElementById('floor-level').innerText = floorLevel;
     document.getElementById('hearts-text').innerText = '❤️'.repeat(mistakesLeft) + '🖤'.repeat(maxMistakes - mistakesLeft);
+    const hintBtn = document.getElementById('btn-hint');
+    document.getElementById('hints-left').innerText = hintsLeft;
+    hintBtn.disabled = hintsLeft <= 0;
 }
 
 function updateActiveRelicsUI() {
@@ -111,6 +146,8 @@ function setupRestartButton() {
         maxMistakes = 5;
         floorLevel = 1;
         playerRelics = [];
+        hintsLeft = 3;
+        hintModeActive = false;
         updateStatsUI();
         loadPuzzleForCurrentFloor();
     });
@@ -167,6 +204,12 @@ function loadPuzzle(difficulty) {
     chiselUses = 0;
     const themeText = document.getElementById('theme-text');
     if (themeText) themeText.innerText = currentPuzzle.theme || "عام";
+    document.getElementById('clue-display').style.display = 'none';
+
+    // clear hint mode if active
+    hintModeActive = false;
+    document.getElementById('btn-hint').classList.remove('active');
+
     renderBoard();
     updateKeyboard();
     updateActiveRelicsUI();
@@ -230,9 +273,78 @@ function selectCell(r, c) {
         }
         return;
     }
+
+    if (hintModeActive) {
+        showHintArrowsForCell(r, c);
+        return;
+    }
+
     selectedCell = { r, c };
     renderBoardSelections();
     updateKeyboard();
+}
+
+function showHintArrowsForCell(r, c) {
+    // Remove old arrows
+    document.querySelectorAll('.hint-arrow').forEach(el => el.remove());
+
+    const targetCell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+    if (!targetCell) return;
+
+    const rowArrow = document.createElement('div');
+    rowArrow.className = 'hint-arrow row-arrow';
+    rowArrow.innerText = '⬅️';
+    rowArrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        revealHint('row', r);
+    });
+
+    const colArrow = document.createElement('div');
+    colArrow.className = 'hint-arrow col-arrow';
+    colArrow.innerText = '⬇️';
+    colArrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        revealHint('col', c);
+    });
+
+    targetCell.appendChild(rowArrow);
+    targetCell.appendChild(colArrow);
+}
+
+function revealHint(type, index) {
+    if (hintsLeft <= 0) return;
+
+    hintsLeft--;
+    hintModeActive = false;
+    document.getElementById('btn-hint').classList.remove('active');
+    updateStatsUI();
+
+    // Remove all arrows
+    document.querySelectorAll('.hint-arrow').forEach(el => el.remove());
+
+    const clueContainer = document.getElementById('clue-display');
+    const clueTextSpan = document.getElementById('clue-text');
+
+    let label = '';
+    let clueStr = '';
+
+    if (type === 'row') {
+        label = `الصف ${index + 1}`;
+        clueStr = currentPuzzle.rowClues ? currentPuzzle.rowClues[index] : 'لا يوجد تلميح مسجل لهذا الصف.';
+    } else {
+        label = `العمود ${index + 1}`;
+        clueStr = currentPuzzle.colClues ? currentPuzzle.colClues[index] : 'لا يوجد تلميح مسجل لهذا العمود.';
+    }
+
+    clueTextSpan.innerHTML = `<strong>تلميح ${label}:</strong> ${clueStr}`;
+    clueContainer.style.display = 'block';
+
+    // Select the cell back normally and update UI
+    if (selectedCell) {
+        updateKeyboard();
+    } else {
+        document.getElementById('region-letters').innerText = 'الرجاء اختيار منطقة';
+    }
 }
 
 function applyChisel(region) {
@@ -407,6 +519,8 @@ function setupNextButton() {
     document.getElementById('btn-next').addEventListener('click', () => {
         document.getElementById('win-overlay').classList.remove('visible');
         floorLevel++;
+        hintsLeft = 3;
+        hintModeActive = false;
         updateStatsUI();
 
         if (floorLevel % 3 === 0) {
