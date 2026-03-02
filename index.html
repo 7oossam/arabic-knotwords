@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>كلمات متشابكة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f7f5f0; color: #333; display: flex; flex-direction: column; min-height: 100vh; padding: 10px; align-items: center; direction: rtl; }
+        header { width: 100%; max-width: 600px; text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 2rem; margin-bottom: 10px; color: #2c3e50; }
+        .difficulty-selector { display: flex; justify-content: center; gap: 10px; }
+        .diff-btn { padding: 8px 16px; border: 2px solid #ccc; background-color: #fff; border-radius: 20px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+        .diff-btn.active { background-color: #3498db; color: white; border-color: #3498db; }
+        .theme-container { background-color: #fff; padding: 8px 16px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; font-size: 1.1rem; color: #34495e; font-weight: bold; }
+        #theme-text { color: #e67e22; }
+        main { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px; }
+        .board { display: grid; gap: 0; background-color: #333; border: 4px solid #111; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .cell { background-color: #fff; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; position: relative; color: #2c3e50; }
+        .cell.selected { background-color: #e0f7fa; }
+        .cell.selected-region { background-color: #f5f5f5; }
+        .cell.error { color: #e74c3c; }
+        .border-top-thick { border-top: 4px solid #111 !important; }
+        .border-right-thick { border-right: 4px solid #111 !important; }
+        .border-bottom-thick { border-bottom: 4px solid #111 !important; }
+        .border-left-thick { border-left: 4px solid #111 !important; }
+        .region-hint { position: absolute; top: 2px; right: 4px; font-size: 0.7rem; color: #7f8c8d; white-space: pre-wrap; text-align: right; line-height: 1; pointer-events: none; }
+        footer { width: 100%; max-width: 600px; background-color: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .keyboard-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 1.2rem; min-height: 24px; color: #e67e22; }
+        .keyboard { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+        .key { background-color: #ecf0f1; border: none; border-radius: 8px; padding: 12px 20px; font-size: 1.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #bdc3c7; color: #2c3e50; min-width: 60px; text-align: center; font-family: inherit; }
+        .key:active { transform: translateY(2px); box-shadow: 0 0 0 #bdc3c7; }
+        .key:disabled, .key.used { background-color: #bdc3c7; color: #7f8c8d; box-shadow: none; transform: translateY(2px); cursor: not-allowed; }
+        .key.delete { background-color: #e74c3c; color: white; box-shadow: 0 2px 0 #c0392b; }
+        .key.delete:active { box-shadow: 0 0 0 #c0392b; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .overlay.visible { opacity: 1; pointer-events: all; }
+        .overlay-content { background: white; padding: 30px; border-radius: 12px; text-align: center; color: #2c3e50; }
+        .overlay-content h2 { font-size: 2.5rem; margin-bottom: 20px; color: #27ae60; }
+        .overlay-content button { padding: 10px 20px; font-size: 1.2rem; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>كلمات متشابكة</h1>
+        <div class="difficulty-selector">
+            <button id="btn-easy" class="diff-btn active">سهل</button>
+            <button id="btn-medium" class="diff-btn">متوسط</button>
+            <button id="btn-large" class="diff-btn">كبير</button>
+        </div>
+    </header>
+
+    <div id="theme-display" class="theme-container">
+        الموضوع: <span id="theme-text">...</span>
+    </div>
+
+    <main>
+        <div id="game-board" class="board"></div>
+    </main>
+
+    <footer>
+        <div class="keyboard-header">
+            <span id="region-letters">الرجاء اختيار منطقة</span>
+        </div>
+        <div id="keyboard" class="keyboard"></div>
+    </footer>
+
+    <div id="win-overlay" class="overlay">
+        <div class="overlay-content">
+            <h2>مبروك! 🎉</h2>
+            <p>لقد حللت اللغز بنجاح.</p>
+            <button id="btn-next" style="margin-top: 20px;">العب مستوى آخر</button>
+        </div>
+    </div>
+
+    <script>
+        const puzzles = {
+            easy: {
+                theme: "الحياة اليومية", rows: 4, cols: 4,
+                solution: [['ع', 'م', 'ا', 'ل'], ['ل', 'ع', 'ب', 'ه'], ['ي', 'ن', 'ا', 'م'], ['م', 'ى', 'ت', 'ا']],
+                regions: [
+                    { id: 'r0', cells: [[0,0], [0,1], [1,0]], letters: ['ع', 'م', 'ل'] },
+                    { id: 'r1', cells: [[0,2], [0,3], [1,2], [1,3]], letters: ['ا', 'ل', 'ب', 'ه'] },
+                    { id: 'r2', cells: [[1,1], [2,1], [3,1]], letters: ['ع', 'ن', 'ى'] },
+                    { id: 'r3', cells: [[2,0], [3,0]], letters: ['ي', 'م'] },
+                    { id: 'r4', cells: [[2,2], [2,3], [3,2], [3,3]], letters: ['ا', 'م', 'ت', 'ا'] }
+                ]
+            },
+            medium: {
+                theme: "شخصيات وصفات", rows: 5, cols: 5,
+                solution: [['م', 'ك', 'ت', 'و', 'ب'], ['ح', 'ا', 'ر', 'س', 'ه'], ['م', 'ح', 'ب', 'و', 'ب'], ['د', 'ا', 'خ', 'ل', 'ي'], ['س', 'ي', 'ر', 'ت', 'ه']],
+                regions: [
+                    { id: 'r0', cells: [[0,0], [0,1], [1,0], [2,0]], letters: ['م', 'ك', 'ح', 'م'] },
+                    { id: 'r1', cells: [[0,2], [0,3], [0,4], [1,4]], letters: ['ت', 'و', 'ب', 'ه'] },
+                    { id: 'r2', cells: [[1,1], [1,2], [1,3]], letters: ['ا', 'ر', 'س'] },
+                    { id: 'r3', cells: [[2,1], [2,2], [3,2], [4,2]], letters: ['ح', 'ب', 'خ', 'ر'] },
+                    { id: 'r4', cells: [[3,0], [3,1], [4,0], [4,1]], letters: ['د', 'ا', 'س', 'ي'] },
+                    { id: 'r5', cells: [[2,3], [2,4], [3,3], [3,4]], letters: ['و', 'ب', 'ل', 'ي'] },
+                    { id: 'r6', cells: [[4,3], [4,4]], letters: ['ت', 'ه'] }
+                ]
+            },
+            large: {
+                theme: "التكنولوجيا والبرمجة", rows: 6, cols: 6,
+                solution: [['م', 'س', 'ت', 'ق', 'ب', 'ل'], ['ت', 'ع', 'ل', 'ي', 'م', 'ي'], ['ب', 'ر', 'ن', 'ا', 'م', 'ج'], ['ح', 'ا', 'س', 'و', 'ب', 'ي'], ['ت', 'ط', 'ب', 'ي', 'ق', 'ي'], ['م', 'ب', 'ر', 'م', 'ج', 'ي']],
+                regions: [
+                    { id: 'r0', cells: [[0,0], [0,1], [1,0], [1,1], [2,0]], letters: ['م', 'س', 'ت', 'ع', 'ب'] },
+                    { id: 'r1', cells: [[0,2], [0,3], [1,2], [1,3]], letters: ['ت', 'ق', 'ل', 'ي'] },
+                    { id: 'r2', cells: [[0,4], [0,5], [1,4], [1,5]], letters: ['ب', 'ل', 'م', 'ي'] },
+                    { id: 'r3', cells: [[2,1], [2,2], [3,1], [3,2], [4,1]], letters: ['ر', 'ن', 'ا', 'س', 'ط'] },
+                    { id: 'r4', cells: [[2,3], [2,4], [2,5]], letters: ['ا', 'م', 'ج'] },
+                    { id: 'r5', cells: [[3,0], [4,0], [5,0], [5,1]], letters: ['ح', 'ت', 'م', 'ب'] },
+                    { id: 'r6', cells: [[3,3], [3,4], [3,5]], letters: ['و', 'ب', 'ي'] },
+                    { id: 'r7', cells: [[4,2], [4,3], [5,2], [5,3]], letters: ['ب', 'ي', 'ر', 'م'] },
+                    { id: 'r8', cells: [[4,4], [4,5], [5,4], [5,5]], letters: ['ق', 'ي', 'ج', 'ي'] }
+                ]
+            }
+        };
+
+        let currentPuzzle = null;
+        let gridState = [];
+        let selectedCell = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            setupDifficultyButtons();
+            setupNextButton();
+            loadPuzzle('easy');
+        });
+
+        function setupDifficultyButtons() {
+            const buttons = document.querySelectorAll('.diff-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    loadPuzzle(e.target.id.replace('btn-', ''));
+                });
+            });
+        }
+
+        function loadPuzzle(difficulty) {
+            currentPuzzle = puzzles[difficulty];
+            gridState = Array.from({ length: currentPuzzle.rows }, () => Array(currentPuzzle.cols).fill(''));
+            selectedCell = null;
+            const themeText = document.getElementById('theme-text');
+            if (themeText) themeText.innerText = currentPuzzle.theme || "عام";
+            renderBoard();
+            updateKeyboard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${currentPuzzle.cols}, 60px)`;
+            board.style.gridTemplateRows = `repeat(${currentPuzzle.rows}, 60px)`;
+            
+            const cellToRegion = {};
+            currentPuzzle.regions.forEach(region => {
+                region.cells.forEach(([r, c]) => cellToRegion[`${r},${c}`] = region);
+            });
+
+            for (let r = 0; r < currentPuzzle.rows; r++) {
+                for (let c = 0; c < currentPuzzle.cols; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    cellDiv.dataset.row = r;
+                    cellDiv.dataset.col = c;
+                    
+                    const region = cellToRegion[`${r},${c}`];
+                    if (region) {
+                        if (r === 0 || cellToRegion[`${r-1},${c}`] !== region) cellDiv.classList.add('border-top-thick');
+                        if (r === currentPuzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region) cellDiv.classList.add('border-bottom-thick');
+                        if (c === 0 || cellToRegion[`${r},${c-1}`] !== region) cellDiv.classList.add('border-right-thick');
+                        if (c === currentPuzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region) cellDiv.classList.add('border-left-thick');
+
+                        if (region.cells[0][0] === r && region.cells[0][1] === c) {
+                            const hintDiv = document.createElement('div');
+                            hintDiv.className = 'region-hint';
+                            hintDiv.innerText = [...region.letters].join(' ');
+                            cellDiv.appendChild(hintDiv);
+                        }
+                    }
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'letter-content';
+                    textSpan.innerText = gridState[r][c];
+                    cellDiv.appendChild(textSpan);
+                    cellDiv.addEventListener('click', () => selectCell(r, c));
+                    board.appendChild(cellDiv);
+                }
+            }
+        }
+
+        function selectCell(r, c) {
+            selectedCell = { r, c };
+            renderBoardSelections();
+            updateKeyboard();
+        }
+
+        function renderBoardSelections() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('selected', 'selected-region'));
+
+            if (!selectedCell) return;
+            const region = getRegionForCell(selectedCell.r, selectedCell.c);
+            
+            cells.forEach(cell => {
+                const r = parseInt(cell.dataset.row);
+                const c = parseInt(cell.dataset.col);
+                if (region && region.cells.some(pos => pos[0] === r && pos[1] === c)) cell.classList.add('selected-region');
+                if (r === selectedCell.r && c === selectedCell.c) cell.classList.add('selected');
+            });
+        }
+
+        function getRegionForCell(r, c) {
+            return currentPuzzle.regions.find(reg => reg.cells.some(pos => pos[0] === r && pos[1] === c));
+        }
+
+        function updateKeyboard() {
+            const keyboardContainer = document.getElementById('keyboard');
+            const regionText = document.getElementById('region-letters');
+            keyboardContainer.innerHTML = '';
+            
+            if (!selectedCell) {
+                regionText.innerText = 'الرجاء اختيار خلية';
+                return;
+            }
+
+            const region = getRegionForCell(selectedCell.r, selectedCell.c);
+            if (!region) return;
+
+            const letterCounts = {};
+            region.letters.forEach(l => letterCounts[l] = (letterCounts[l] || 0) + 1);
+
+            region.cells.forEach(([r, c]) => {
+                const char = gridState[r][c];
+                if (char && letterCounts[char] > 0) letterCounts[char]--;
+            });
+
+            regionText.innerText = 'الحروف المتاحة:';
+            const uniqueLetters = [...new Set(region.letters)];
+            
+            uniqueLetters.forEach(letter => {
+                const btn = document.createElement('button');
+                btn.className = 'key';
+                btn.innerText = letter;
+                if (letterCounts[letter] <= 0) {
+                    btn.classList.add('used');
+                    btn.disabled = true;
+                }
+                btn.addEventListener('click', () => handleKeyPress(letter));
+                keyboardContainer.appendChild(btn);
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'key delete';
+            delBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>';
+            delBtn.addEventListener('click', () => handleKeyPress('Backspace'));
+            keyboardContainer.appendChild(delBtn);
+        }
+
+        function handleKeyPress(key) {
+            if (!selectedCell) return;
+            if (key === 'Backspace') {
+                gridState[selectedCell.r][selectedCell.c] = '';
+            } else {
+                gridState[selectedCell.r][selectedCell.c] = key;
+                advanceSelection();
+            }
+            updateBoardUI();
+            updateKeyboard();
+            checkWinCondition();
+        }
+
+        function checkWinCondition() {
+            let isComplete = true;
+            let isCorrect = true;
+
+            for (let r = 0; r < currentPuzzle.rows; r++) {
+                for (let c = 0; c < currentPuzzle.cols; c++) {
+                    if (gridState[r][c] === '') isComplete = false;
+                    else if (gridState[r][c] !== currentPuzzle.solution[r][c]) isCorrect = false;
+                }
+            }
+
+            if (isComplete) {
+                if (isCorrect) document.getElementById('win-overlay').classList.add('visible');
+                else checkRegionsForErrors();
+            } else {
+                document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('error'));
+            }
+        }
+
+        function checkRegionsForErrors() {
+            document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('error'));
+            currentPuzzle.regions.forEach(region => {
+                let isRegionFilled = true, isRegionCorrect = true;
+                region.cells.forEach(([r, c]) => {
+                    if (gridState[r][c] === '') isRegionFilled = false;
+                    else if (gridState[r][c] !== currentPuzzle.solution[r][c]) isRegionCorrect = false;
+                });
+                if (isRegionFilled && !isRegionCorrect) {
+                    region.cells.forEach(([r, c]) => {
+                        const domCell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+                        if (domCell) domCell.classList.add('error');
+                    });
+                }
+            });
+        }
+
+        function setupNextButton() {
+            document.getElementById('btn-next').addEventListener('click', () => {
+                document.getElementById('win-overlay').classList.remove('visible');
+                const buttons = document.querySelectorAll('.diff-btn');
+                let currentIdx = Array.from(buttons).findIndex(b => b.classList.contains('active'));
+                buttons[(currentIdx + 1) % buttons.length].click();
+            });
+        }
+
+        function advanceSelection() {
+            if (!selectedCell) return;
+            const region = getRegionForCell(selectedCell.r, selectedCell.c);
+            if (!region) return;
+
+            let currentIndex = region.cells.findIndex(([r, c]) => r === selectedCell.r && c === selectedCell.c);
+            for (let i = 1; i < region.cells.length; i++) {
+                const [nr, nc] = region.cells[(currentIndex + i) % region.cells.length];
+                if (gridState[nr][nc] === '') {
+                    selectCell(nr, nc);
+                    return;
+                }
+            }
+            for (let r = 0; r < currentPuzzle.rows; r++) {
+                for (let c = 0; c < currentPuzzle.cols; c++) {
+                    if (gridState[r][c] === '') {
+                        selectCell(r, c);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function updateBoardUI() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                const r = parseInt(cell.dataset.row);
+                const c = parseInt(cell.dataset.col);
+                const textSpan = cell.querySelector('.letter-content');
+                if (textSpan) textSpan.innerText = gridState[r][c];
+            });
+        }
+    </script>
+</body>
+</html>
