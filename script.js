@@ -1,39 +1,56 @@
 const puzzles = {
     easy: {
-        theme: "عالمنا البسيط", rows: 3, cols: 3,
-        solution: [['ش', 'م', 'س'], ['م', 'ل', 'ك'], ['س', 'ك', 'ن']],
-        rowClues: ["نجم يضيء الأرض نهاراً ويمدنا بالدفء", "من يحكم دولة أو شعباً", "أقام وعاش في مكان ما"],
-        colClues: ["نجم يضيء الأرض نهاراً ويمدنا بالدفء", "من يحكم دولة أو شعباً", "أقام وعاش في مكان ما"],
+        theme: "فواكه", rows: 3, cols: 4,
+        solution: [
+            ['ت', 'و', 'ت', ' '],
+            ['و', ' ', ' ', ' '],
+            ['ت', 'ف', 'ا', 'ح']
+        ],
+        rowClues: ["فاكهة صيفية حلوة المذاق وحباتها صغيرة", "", "ثمرة دائرية من أشهر الفواكه وأكثرها فائدة"],
+        colClues: ["فاكهة صيفية حلوة المذاق وحباتها صغيرة", "", "", ""],
         regions: [
-            { id: 'r0', cells: [[0,0], [0,1], [1,0]], letters: ['م', 'ش', 'م'] },
-            { id: 'r1', cells: [[0,2], [1,1], [1,2]], letters: ['س', 'ك', 'ل'] },
-            { id: 'r2', cells: [[2,0], [2,1], [2,2]], letters: ['ك', 'س', 'ن'] }
+            { id: 'r0', cells: [[0,0], [1,0], [2,0]], letters: ['ت', 'و', 'ت'] },
+            { id: 'r1', cells: [[0,1], [0,2], [2,1], [2,2], [2,3]], letters: ['و', 'ت', 'ف', 'ا', 'ح'] }
         ]
     },
     medium: {
-        theme: "أفعال وأشياء", rows: 4, cols: 4,
-        solution: [['ك', 'ت', 'ا', 'ب'], ['ت', 'ا', 'ر', 'ك'], ['ا', 'ر', 'ض', 'ي'], ['ب', 'ك', 'ي', 'ت']],
-        rowClues: ["مجموعة أوراق مطبوعة ومجلدة للقراءة", "من تخلى عن شيء أو ذهب عنه", "نسبة إلى كوكبنا أو التربة (صفة)", "ذرفت الدموع حزناً أو تأثراً"],
-        colClues: ["مجموعة أوراق مطبوعة ومجلدة للقراءة", "من تخلى عن شيء أو ذهب عنه", "نسبة إلى كوكبنا أو التربة (صفة)", "ذرفت الدموع حزناً أو تأثراً"],
+        theme: "ألوان", rows: 4, cols: 6,
+        solution: [
+            ['ا', 'ص', 'ف', 'ر', ' ', 'ا'],
+            ['ب', ' ', ' ', ' ', ' ', 'ح'],
+            ['ي', ' ', ' ', ' ', ' ', 'م'],
+            ['ض', ' ', 'ا', 'خ', 'ض', 'ر']
+        ],
+        rowClues: ["لون الشمس والذهب", "", "", "لون النباتات والأشجار"],
+        colClues: ["لون الثلج والغيوم الصافية", "", "", "", "", "لون الدم والنار"],
         regions: [
-            { id: 'r0', cells: [[0,0], [0,1], [1,0]], letters: ['ت', 'ت', 'ك'] },
-            { id: 'r1', cells: [[0,2], [0,3], [1,3]], letters: ['ب', 'ا', 'ك'] },
-            { id: 'r2', cells: [[1,1], [1,2], [2,2]], letters: ['ا', 'ض', 'ر'] },
-            { id: 'r3', cells: [[2,0], [2,1], [3,0]], letters: ['ا', 'ب', 'ر'] },
-            { id: 'r4', cells: [[2,3], [3,1], [3,2], [3,3]], letters: ['ي', 'ك', 'ي', 'ت'] }
+            { id: 'r0', cells: [[0,0], [1,0], [2,0], [3,0]], letters: ['ا', 'ب', 'ي', 'ض'] },
+            { id: 'r1', cells: [[0,1], [0,2], [0,3]], letters: ['ص', 'ف', 'ر'] },
+            { id: 'r2', cells: [[3,2], [3,3], [3,4], [3,5]], letters: ['ا', 'خ', 'ض', 'ر'] },
+            { id: 'r3', cells: [[0,5], [1,5], [2,5]], letters: ['ا', 'ح', 'م'] }
         ]
     },
     large: {
-        theme: "أخلاق وصفات", rows: 4, cols: 4,
-        solution: [['ع', 'ا', 'ل', 'م'], ['ا', 'د', 'ا', 'ب'], ['ل', 'ا', 'ي', 'ق'], ['م', 'ب', 'ق', 'ى']],
-        rowClues: ["الكون وما فيه من كائنات", "أخلاق وفنون القول", "مناسب وجيد ويليق بالشيء", "الشيء الذي تم الاحتفاظ به"],
-        colClues: ["الكون وما فيه من كائنات", "أخلاق وفنون القول", "مناسب وجيد ويليق بالشيء", "الشيء الذي تم الاحتفاظ به"],
+        theme: "حيوانات", rows: 10, cols: 7,
+        solution: [
+            ['ع', ' ', ' ', ' ', ' ', ' ', ' '],
+            ['ن', ' ', ' ', ' ', ' ', ' ', ' '],
+            ['ك', ' ', ' ', ' ', ' ', ' ', ' '],
+            ['ب', ' ', ' ', ' ', ' ', ' ', ' '],
+            ['و', ' ', ' ', ' ', ' ', ' ', ' '],
+            ['ت', 'م', 'س', 'ا', 'ح', ' ', ' '],
+            [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+            [' ', ' ', 'د', ' ', ' ', ' ', ' '],
+            [' ', ' ', 'ل', ' ', ' ', ' ', ' '],
+            [' ', 'س', 'ل', 'ح', 'ف', 'ا', 'ة']
+        ],
+        rowClues: ["", "", "", "", "", "زاحف مائي ضخم ذو فكين قويين", "", "", "", "زاحف بطيء يتميز بصدفة صلبة"],
+        colClues: ["من الحشرات المشهورة بنسج الشباك", "", "حيوان بحري ذكي ومحبوب", "", "", "", ""],
         regions: [
-            { id: 'r0', cells: [[0,0], [1,0], [1,1]], letters: ['ع', 'ا', 'د'] },
-            { id: 'r1', cells: [[0,1], [0,2], [0,3]], letters: ['ا', 'م', 'ل'] },
-            { id: 'r2', cells: [[1,2], [1,3], [2,3]], letters: ['ا', 'ق', 'ب'] },
-            { id: 'r3', cells: [[2,0], [2,1], [3,0], [3,1]], letters: ['ا', 'م', 'ب', 'ل'] },
-            { id: 'r4', cells: [[2,2], [3,2], [3,3]], letters: ['ي', 'ق', 'ى'] }
+            { id: 'r0', cells: [[0,0], [1,0], [2,0], [3,0], [4,0]], letters: ['ع', 'ن', 'ك', 'ب', 'و'] },
+            { id: 'r1', cells: [[5,0], [5,1], [5,2], [5,3], [5,4]], letters: ['ت', 'م', 'س', 'ا', 'ح'] },
+            { id: 'r2', cells: [[7,2], [8,2], [9,2]], letters: ['د', 'ل', 'ل'] },
+            { id: 'r3', cells: [[9,1], [9,3], [9,4], [9,5], [9,6]], letters: ['س', 'ح', 'ف', 'ا', 'ة'] }
         ]
     }
 };
@@ -43,12 +60,12 @@ let mistakesLeft = 5;
 let maxMistakes = 5;
 let floorLevel = 1;
 let gridState = [];
-let selectedCell = null;
-let playerRelics = [];
+let selectedCell = null;let playerRelics = [];
 let chiselActive = false;
 let chiselUses = 0;
 let hintsLeft = 3;
 let hintModeActive = false;
+let revealedHints = { row: [], col: [] };
 
 const availableRelics = [
     { id: 'extra_heart', title: 'قلب إضافي', desc: 'استعد خطأ واحد فورا', type: 'passive' },
@@ -140,6 +157,7 @@ function setupRestartButton() {
         playerRelics = [];
         hintsLeft = 3;
         hintModeActive = false;
+        revealedHints = { row: [], col: [] };
         updateStatsUI();
         loadPuzzleForCurrentFloor();
     });
@@ -201,6 +219,7 @@ function loadPuzzle(difficulty) {
     // clear hint mode if active
     hintModeActive = false;
     document.getElementById('btn-hint').classList.remove('active');
+    revealedHints = { row: [], col: [] };
 
     renderBoard();
     updateKeyboard();
@@ -225,12 +244,19 @@ function renderBoard() {
             cellDiv.dataset.row = r;
             cellDiv.dataset.col = c;
 
+            if (currentPuzzle.solution[r][c] === ' ') {
+                cellDiv.classList.add('empty');
+                gridState[r][c] = ' '; // auto-fill empty cells to avoid breaking check logic
+                board.appendChild(cellDiv);
+                continue;
+            }
+
             const region = cellToRegion[`${r},${c}`];
             if (region) {
-                if (r === 0 || cellToRegion[`${r-1},${c}`] !== region) cellDiv.classList.add('border-top-thick');
-                if (r === currentPuzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region) cellDiv.classList.add('border-bottom-thick');
-                if (c === 0 || cellToRegion[`${r},${c-1}`] !== region) cellDiv.classList.add('border-right-thick');
-                if (c === currentPuzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region) cellDiv.classList.add('border-left-thick');
+                if (r === 0 || cellToRegion[`${r-1},${c}`] !== region || currentPuzzle.solution[r-1]?.[c] === ' ') cellDiv.classList.add('border-top-thick');
+                if (r === currentPuzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region || currentPuzzle.solution[r+1]?.[c] === ' ') cellDiv.classList.add('border-bottom-thick');
+                if (c === 0 || cellToRegion[`${r},${c-1}`] !== region || currentPuzzle.solution[r][c-1] === ' ') cellDiv.classList.add('border-right-thick');
+                if (c === currentPuzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region || currentPuzzle.solution[r][c+1] === ' ') cellDiv.classList.add('border-left-thick');
 
                 if (region.cells[0][0] === r && region.cells[0][1] === c) {
                     const hintDiv = document.createElement('div');
@@ -303,13 +329,20 @@ function showHintArrowsForCell(r, c) {
     targetCell.appendChild(colArrow);
 }
 
-function revealHint(type, index) {
-    if (hintsLeft <= 0) return;
 
-    hintsLeft--;
+function revealHint(type, index) {
+    const isAlreadyRevealed = revealedHints[type].includes(index);
+    if (!isAlreadyRevealed && hintsLeft <= 0) return;
+
+    if (!isAlreadyRevealed) {
+        hintsLeft--;
+        revealedHints[type].push(index);
+    }
+
     hintModeActive = false;
     document.getElementById('btn-hint').classList.remove('active');
     updateStatsUI();
+
 
     // Remove all arrows
     document.querySelectorAll('.hint-arrow').forEach(el => el.remove());
@@ -398,7 +431,9 @@ function updateKeyboard() {
     keyboardContainer.innerHTML = '';
 
     if (!selectedCell) {
-        regionText.innerText = 'الرجاء اختيار منطقة';
+        if (!hintModeActive && !chiselActive) {
+            regionText.innerText = 'الرجاء اختيار منطقة';
+        }
         return;
     }
 
@@ -513,6 +548,7 @@ function setupNextButton() {
         floorLevel++;
         hintsLeft = 3;
         hintModeActive = false;
+        revealedHints = { row: [], col: [] };
         updateStatsUI();
 
         if (floorLevel % 3 === 0) {

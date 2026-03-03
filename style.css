@@ -11,8 +11,9 @@ h1 { font-size: 2rem; margin-bottom: 10px; color: #2c3e50; }
 #theme-text { color: #e67e22; }
 .clue-container { background-color: #34495e; color: white; padding: 10px 20px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-size: 1.1rem; line-height: 1.4; width: 100%; max-width: 600px; }
 main { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px; }
-.board { display: grid; gap: 0; background-color: #333; border: 4px solid #111; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.cell { background-color: #fff; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; position: relative; color: #2c3e50; }
+.board { display: grid; gap: 0; background-color: transparent; border: none; overflow: visible; position: relative; box-shadow: none; }
+.cell { background-color: #fff; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; position: relative; color: #2c3e50; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.cell.empty { background-color: transparent; border: none; pointer-events: none; box-shadow: none; }
 .cell.selected { background-color: #e0f7fa; }
 .cell.selected-region { background-color: #f5f5f5; }
 .cell.error { color: #e74c3c; }
