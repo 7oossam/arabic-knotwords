@@ -75,20 +75,11 @@ class CrosswordGenerator {
     }
 
     placeWord(wordObj, startRow, startCol, isHorizontal) {
-        const { word, clue } = wordObj;
+        const { word } = wordObj;
         for (let i = 0; i < word.length; i++) {
             const r = isHorizontal ? startRow : startRow + i;
             const c = isHorizontal ? startCol + i : startCol;
             this.grid[r][c] = word[i];
-
-            // Note: Since knotwords groups words tightly,
-            // assigning clues based on primary direction is enough for now.
-            // If overlapping, we'll keep the first assigned clue or merge.
-            if (isHorizontal && !this.rowCluesMap[r]) {
-                this.rowCluesMap[r] = clue;
-            } else if (!isHorizontal && !this.colCluesMap[c]) {
-                this.colCluesMap[c] = clue;
-            }
         }
         this.placedWords.push({ word, r: startRow, c: startCol, isHorizontal });
     }
@@ -126,23 +117,29 @@ class CrosswordGenerator {
 
         // Keep trying to place remaining words to build the grid
         let attempts = 0;
-        while (attempts < 50 && this.wordsData.length > 0) {
+        let intersectionsCount = 0;
+
+        while (attempts < 200 && this.wordsData.length > 0) {
             // We rotate through the words to try fitting as many as possible
             const wordObj = this.wordsData.shift();
 
-            if (this.tryPlaceIntersecting(wordObj)) {
+            const placed = this.tryPlaceIntersecting(wordObj);
+            if (placed) {
                 // If placed, reset attempts and continue, we can potentially place more.
                 attempts = 0;
+                intersectionsCount++;
             } else {
                 // If we couldn't place it, push it to the back to maybe try later if the grid expands
                 this.wordsData.push(wordObj);
                 attempts++;
             }
 
-            if (this.placedWords.length >= 6) break; // Arbitrary good amount for a filled puzzle
+            // Allow placing up to 15 words if they fit, for a denser grid.
+            if (this.placedWords.length >= 15) break;
         }
 
-        return this.placedWords.length >= 2; // Success if we placed at least 2 intersecting words
+        // Success if we placed at least 5 words and have at least 4 intersections
+        return this.placedWords.length >= 5 && intersectionsCount >= 4;
     }
 
     tryPlaceIntersecting(wordObj) {
@@ -183,13 +180,13 @@ class CrosswordGenerator {
 
     getSolution() {
         return {
-            grid: this.grid,
-            rowClues: this.rowCluesMap,
-            colClues: this.colCluesMap
+            grid: this.grid
         };
     }
 
     // Polyomino Region Generation
+    // In Knotwords, we divide the active crossword grid into irregular polyominos.
+    // Each region stores the letters that belong inside it as the sole "hint".
     generateRegions(minSize = 4, maxSize = 6) {
         // Collect all filled cells
         const filledCells = [];
@@ -240,11 +237,15 @@ class CrosswordGenerator {
                 unassigned.delete(`${nextCell[0]},${nextCell[1]}`);
             }
 
+            // The hint string is simply all letters in this region, sorted alphabetically or randomly.
+            // Let's sort alphabetically to make it visually cleaner, like Knotwords.
+            const regionLetters = currentRegionCells.map(([r, c]) => this.grid[r][c]).sort();
+
             // Record region
             regions.push({
                 id: `r${regionIdCounter++}`,
                 cells: currentRegionCells,
-                letters: currentRegionCells.map(([r, c]) => this.grid[r][c]).sort(() => Math.random() - 0.5) // Shuffle letters for the player
+                letters: regionLetters
             });
         }
 
@@ -265,7 +266,7 @@ class CrosswordGenerator {
                             if (adjRegion && adjRegion.cells.length < maxSize + 2) { // allowable flex for merging
                                 adjRegion.cells.push(...smallRegion.cells);
                                 adjRegion.letters.push(...smallRegion.letters);
-                                adjRegion.letters.sort(() => Math.random() - 0.5); // reshuffle
+                                adjRegion.letters.sort(); // sort alphabetically
                                 regions.splice(i, 1);
                                 merged = true;
                                 consolidated = true;
@@ -294,24 +295,11 @@ function generateGamePuzzle(subject, rows, cols) {
     const solutionData = gen.getSolution();
     const regions = gen.generateRegions(4, 6);
 
-    // Convert clue maps to arrays matching the row/col index
-    const rowClues = Array(rows).fill(null);
-    for (const [r, clue] of Object.entries(solutionData.rowClues)) {
-        rowClues[r] = clue;
-    }
-
-    const colClues = Array(cols).fill(null);
-    for (const [c, clue] of Object.entries(solutionData.colClues)) {
-        colClues[c] = clue;
-    }
-
     return {
         theme: subject,
         rows: rows,
         cols: cols,
         solution: solutionData.grid,
-        rowClues: rowClues,
-        colClues: colClues,
         regions: regions
     };
 }
@@ -323,7 +311,7 @@ const subjects = Object.keys(wordBank);
 function getValidPuzzle(subject, rows, cols) {
     let puzzle = null;
     let attempts = 0;
-    while (!puzzle && attempts < 100) {
+    while (!puzzle && attempts < 1000) {
         puzzle = generateGamePuzzle(subject, rows, cols);
         attempts++;
     }
@@ -331,9 +319,9 @@ function getValidPuzzle(subject, rows, cols) {
 }
 
 const newPuzzles = {
-    easy: getValidPuzzle(subjects[0], 4, 4),
-    medium: getValidPuzzle(subjects[1], 5, 5),
-    large: getValidPuzzle(subjects[2], 6, 6)
+    easy: getValidPuzzle(subjects[0], 10, 10),
+    medium: getValidPuzzle(subjects[1], 10, 10),
+    large: getValidPuzzle(subjects[2], 10, 10)
 };
 
 console.log(JSON.stringify(newPuzzles, null, 2));
