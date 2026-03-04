@@ -93,10 +93,11 @@
 
         .puzzle-grid {
             display: grid;
-            gap: 2px;
-            background-color: #ccc;
-            border: 2px solid #333;
+            gap: 0; /* Flush cells for Knotwords aesthetic */
+            background-color: transparent; /* No background, borders will define it */
             margin-bottom: 20px;
+            box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.2); /* Heavy drop shadow */
+            border-radius: 4px;
         }
 
         .cell {
@@ -110,17 +111,20 @@
             width: 50px;
             height: 50px;
             position: relative;
+            box-sizing: border-box;
+            border: 1px solid #ddd; /* Thin internal borders */
         }
 
         .cell.empty {
             background-color: transparent;
+            border: none;
         }
 
         /* Thicker borders for regions */
-        .border-top-thick { border-top: 4px solid #333 !important; }
-        .border-bottom-thick { border-bottom: 4px solid #333 !important; }
-        .border-left-thick { border-left: 4px solid #333 !important; }
-        .border-right-thick { border-right: 4px solid #333 !important; }
+        .border-top-thick { border-top: 3px solid #333 !important; }
+        .border-bottom-thick { border-bottom: 3px solid #333 !important; }
+        .border-left-thick { border-left: 3px solid #333 !important; }
+        .border-right-thick { border-right: 3px solid #333 !important; }
 
         .region-hint {
             position: absolute;
@@ -212,71 +216,458 @@
     <script>
         // --- 1. Word Bank ---
         const wordBank = {
-            "مدرسة": [
-                {"word": "مكتب", "clue": "مكان للدراسة والعمل"},
-                {"word": "علم", "clue": "راية أو معرفة"},
-                {"word": "كتاب", "clue": "خير جليس في الزمان"},
-                {"word": "قلم", "clue": "أداة للكتابة"},
-                {"word": "ورق", "clue": "مادة للكتابة عليها"},
-                {"word": "درس", "clue": "حصة تعليمية"},
-                {"word": "طالب", "clue": "يتلقى العلم في المدرسة"},
-                {"word": "معلم", "clue": "يشرح الدروس للتلاميذ"},
-                {"word": "فصل", "clue": "حجرة دراسية في المدرسة"},
-                {"word": "لوح", "clue": "سبورة يكتب عليها المعلم"},
-                {"word": "دفتر", "clue": "كراسة لتدوين الملاحظات"},
-                {"word": "نجاح", "clue": "نتيجة الاجتهاد والتفوق"}
+            "مدرسة": ["مكتب", "علم", "كتاب", "قلم", "ورق", "درس", "طالب", "معلم", "فصل", "لوح", "دفتر", "نجاح", "مدرسة", "سبورة", "مدير", "زميل"],
+            "حيوانات": ["اسد", "نمر", "فيل", "قرد", "كلب", "قطة", "حصان", "جمل", "بقرة", "غزال", "دب", "ثعلب", "ذئب", "خروف"],
+            "فواكه": ["تفاح", "موز", "عنب", "برتقال", "بطيخ", "خوخ", "مانجو", "فراولة", "رمان", "تمر", "تين", "مشمش"],
+            "مهن": ["طبيب", "مهندس", "معلم", "نجار", "حداد", "خباز", "شرطي", "طيار", "فلاح", "قاضي", "محامي", "عامل"],
+            "دول وعواصم": ["مصر", "قاهرة", "سعودية", "رياض", "عراق", "بغداد", "مغرب", "رباط", "لبنان", "بيروت", "سوريا", "دمشق"]
+        };
+
+        const fillerWords = [
+
+
+            "من", "في", "على", "عن", "مع", "هو", "هي", "هم", "هن", "نحن", "انا", "انت",
+            "كان", "صار", "ليس", "هل", "قد", "ما", "لا", "نعم", "بلى", "اب", "ام", "اخ",
+            "اخت", "جد", "جدة", "عم", "عمة", "خال", "خالة", "ماء", "نار", "هواء", "ارض",
+            "شمس", "قمر", "نجم", "سماء", "ليل", "نهار", "يوم", "غد", "امس", "سنة", "شهر",
+            "اسد", "دب", "قط", "كلب", "فأر", "طير", "سمك", "نحل", "نمل", "بيت", "دار",
+            "باب", "شباك", "جدار", "سقف", "يد", "رجل", "عين", "انف", "فم", "اذن", "رأس",
+            "دم", "عظم", "جلد", "شعر", "قلب", "عقل", "روح", "اسم", "فعل", "حرف", "حق",
+            "خير", "شر", "حب", "كره", "علم", "جهل", "نور", "ظلام", "صدق", "كذب", "حر",
+            "عبد", "رب", "دين", "دنيا", "قوة", "ضعف", "فرح", "حزن", "ضحك", "بكي", "اكل",
+            "شرب", "نوم", "مشي", "جري", "قفز", "لعب", "عمل", "فكر", "ذكر", "شكر", "صبر",
+            "كيف", "متى", "اين", "لم", "لن", "ان", "لو", "بل", "ثم", "او", "ام", "اذا",
+            "هنا", "هناك", "تحت", "فوق", "خلف", "امام", "يمين", "يسار", "وسط", "جانب",
+            "بين", "بعد", "قبل", "حول", "دون", "لدى", "بها", "له", "لها", "لهم", "لنا",
+            "بهم", "بكم", "بنا", "منه", "منها", "عنه", "عنها", "فيه", "فيها", "عليه",
+            "ال", "يا", "ابو", "ابن", "بنت", "ذو", "ذات", "كل", "بعض", "اي", "غير", "سوى"
+        ,
+            // Extra 5+ letter words
+            "سيارة", "طائرة", "دراجة", "قطينة", "سفينة", "مكتبة", "مدرسة", "مستشفى", "حديقة", "نافذة", "رسالة", "خريطة", "مسافة", "صديقة", "جميلة", "كبيرة", "صغيرة", "طويلة", "قصيرة", "سريعة", "بطيئة", "كثيرة", "قليلة", "نظيفة", "جديدة", "قديمة", "فقيرة", "سعيدة", "حزينة", "صحيحة", "عظيمة", "كريمة", "بخيلة", "لطيفة", "مفيدة", "غريبة", "عجيبة", "شجاعة", "ضعيفة", "طبيعة", "فراشة", "حمامة", "دجاجة", "زرافة", "نحيفة", "سمينة", "مدينة", "قرينة", "شريكة", "رقيقة", "دقيقة", "حقيقة", "طريقة", "شريعة", "صناعة", "زراعة", "تجارة", "عمارة", "إمارة", "إدارة", "إرادة", "إفادة", "إعادة", "إشادة", "إبادة", "قراءة", "براءة", "عباءة", "عناءة", "سناءة", "هناءة", "رجاءة", "دعاءة", "نداءة", "فداءة", "بناءة", "فناءة", "سماءة", "شتاءة", "غذاءة", "مساءة", "صباحا", "مساءا", "شمالا", "جنوبا", "أحيانا", "أبدا", "دائما", "غالبا", "نادرا", "كثيرا", "قليلا", "عظيما", "كبيرا", "صغيرا", "طويلا", "قصيرا", "سريعا", "بطيئا", "سعيدا", "جميلا", "قبيحا", "نظيفا", "جديدا", "قديما", "فقير", "غني", "كريم", "بخيل", "لطيف", "يعملون", "يلعبون", "يأكلون", "يشربون", "يذهبون", "يرجعون", "يكتبون", "يقرأون", "ينامون", "يستيقظون", "ينظرون", "يسمعون", "يتكلمون", "يفهمون", "يعرفون", "يتعلمون", "يدرسون", "يختبرون", "ينجحون", "يفشلون", "يضحكون", "يبكون", "يفرحون", "يحزنون", "يغضبون", "يرضون", "يحبون", "يكرهون", "يعطون", "يأخذون", "يبيعون", "يشترون", "يدفعون", "يقبضون", "يمسكون", "يطلقون", "يربطون", "يفكون", "يفتحون", "يغلقون", "العرب", "الغرب", "الشرق", "الشمال", "الجنوب", "الأرض", "السماء", "البحر", "الجبل", "النهر", "الشمس", "القمر", "النجم", "الليل", "النهار", "اليوم", "الأمس", "الغد", "الشهر", "السنة", "الرجل", "المرأة", "الولد", "البنت", "الأب", "الأم", "الأخ", "الأخت", "الجد", "الجدة", "استاذة", "استقبال", "استعمال", "استقلال", "استغلال", "استبدال", "استكمال", "استحسان", "استحمام", "استعلام", "استفهام", "استسلام", "استرحام", "استخدام", "السيارة", "الطائرة", "الدراجة", "السفينة", "المكتبة", "المدرسة", "المستشفى", "الحديقة", "النافذة", "الرسالة", "الخريطة", "المسافة", "الصديقة", "الجميلة", "الكبيرة", "الصغيرة", "الطويلة", "القصيرة", "السريعة", "البطيئة", "الكثيرة", "القليلة", "النظيفة", "الجديدة", "القديمة", "الفقيرة", "السعيدة", "الحزينة", "الصحيحة", "العظيمة", "الكريمة", "البخيلة", "اللطيفة", "المفيدة", "الغريبة", "العجيبة"
+        ,
+            // Mega dictionary expansion
+            "كتب",
+            "قرأ",
+            "ذهب",
+            "رجع",
+            "نام",
+            "قام",
+            "جلس",
+            "وقف",
+            "لعب",
+            "مشي",
+            "جري",
+            "أكل",
+            "شرب",
+            "ضحك",
+            "بكي",
+            "فرح",
+            "حزن",
+            "غضب",
+            "رضي",
+            "علم",
+            "فهم",
+            "عرف",
+            "جهل",
+            "سمع",
+            "نظر",
+            "رأى",
+            "قال",
+            "سأل",
+            "أجاب",
+            "عمل",
+            "صنع",
+            "فعل",
+            "خلق",
+            "ولد",
+            "مات",
+            "عاش",
+            "بقي",
+            "ذهب",
+            "أتى",
+            "جاء",
+            "وصل",
+            "عاد",
+            "زار",
+            "شكر",
+            "ذكر",
+            "فكر",
+            "صبر",
+            "كفر",
+            "أمن",
+            "صدق",
+            "كذب",
+            "حكم",
+            "ظلم",
+            "عدل",
+            "نصر",
+            "هزم",
+            "كسر",
+            "فتح",
+            "غلق",
+            "دفع",
+            "سحب",
+            "رفع",
+            "نزل",
+            "صعد",
+            "هبط",
+            "طار",
+            "سبح",
+            "غرق",
+            "قلم",
+            "كتاب",
+            "ورق",
+            "باب",
+            "شباك",
+            "جدار",
+            "سقف",
+            "أرض",
+            "سماء",
+            "نجم",
+            "قمر",
+            "شمس",
+            "ليل",
+            "نهار",
+            "يوم",
+            "شهر",
+            "سنة",
+            "ماء",
+            "نار",
+            "هواء",
+            "بحر",
+            "نهر",
+            "جبل",
+            "غابة",
+            "شجر",
+            "ثمر",
+            "ورد",
+            "زهر",
+            "عشب",
+            "طير",
+            "سمك",
+            "أسد",
+            "دب",
+            "كلب",
+            "قط",
+            "فأر",
+            "نمل",
+            "نحل",
+            "عسل",
+            "لبن",
+            "خبز",
+            "لحم",
+            "دم",
+            "عظم",
+            "جلد",
+            "شعر",
+            "رأس",
+            "عين",
+            "أذن",
+            "أنف",
+            "فم",
+            "سن",
+            "يد",
+            "رجل",
+            "قلب",
+            "عقل",
+            "روح",
+            "اسم",
+            "فعل",
+            "حرف",
+            "رقم",
+            "شكل",
+            "لون",
+            "صوت",
+            "ضوء",
+            "ظل",
+            "حر",
+            "برد",
+            "خير",
+            "شر",
+            "حق",
+            "باطل",
+            "دين",
+            "دنيا",
+            "عرب",
+            "عجم",
+            "أحمد",
+            "محمد",
+            "علي",
+            "عمر",
+            "حسن",
+            "حسين",
+            "خالد",
+            "سعيد",
+            "سالم",
+            "طارق",
+            "زياد",
+            "يوسف",
+            "يونس",
+            "موسى",
+            "عيسى",
+            "مريم",
+            "سارة",
+            "فاطمة",
+            "زينب",
+            "رقية",
+            "خديجة",
+            "عائشة",
+            "كتاب",
+            "دفتر",
+            "مكتب",
+            "مقعد",
+            "طاولة",
+            "لوحة",
+            "صورة",
+            "ساعة",
+            "حقيبة",
+            "ملابس",
+            "حذاء",
+            "قميص",
+            "بنطال",
+            "قبعة",
+            "نظارة",
+            "سيارة",
+            "قطار",
+            "طائرة",
+            "دراجة",
+            "سفينة",
+            "قارب",
+            "طريق",
+            "شارع",
+            "مدينة",
+            "قرية",
+            "بلد",
+            "عالم",
+            "وطن",
+            "شعب",
+            "جيش",
+            "شرطة",
+            "قاضي",
+            "طبيب",
+            "معلم",
+            "طالب",
+            "عامل",
+            "تاجر",
+            "فلاح",
+            "مزارع",
+            "صانع",
+            "مهندس",
+            "مدير",
+            "رئيس",
+            "ملك",
+            "أمير",
+            "وزير",
+            "سفير",
+            "نبي",
+            "رسول",
+            "إسلام",
+            "إيمان",
+            "إحسان",
+            "قرآن",
+            "توراة",
+            "إنجيل",
+            "زبور",
+            "مسجد",
+            "كنيسة",
+            "معبد",
+            "صلاة",
+            "زكاة",
+            "صيام",
+            "حج",
+            "عمرة",
+            "وضوء",
+            "طهارة",
+            "دعاء",
+            "تسبيح",
+            "تكبير",
+            "تهليل",
+            "تحميد",
+            "استغفار",
+            "توبة",
+            "مغفرة",
+            "رحمة",
+            "نعمة",
+            "بركة",
+            "سلام",
+            "أمان",
+            "حرية",
+            "عدالة",
+            "مساواة",
+            "أخوة",
+            "محبة",
+            "صداقة",
+            "تعاون",
+            "تضامن",
+            "تكافل",
+            "تسامح",
+            "عفو",
+            "صفح",
+            "حلم",
+            "أناة",
+            "وقار",
+            "سكينة",
+            "طمأنينة",
+            "سعادة",
+            "سرور",
+            "فرح",
+            "بهجة",
+            "متعة",
+            "لذة",
+            "ألم",
+            "وجع",
+            "مرض",
+            "سقم",
+            "شفاء",
+            "علاج",
+            "دواء",
+            "طبيب",
+            "مريض",
+            "مستشفى",
+            "عيادة",
+            "صيدلية",
+            "بنت",
+            "أخت",
+            "أخو",
+            "أبو",
+            "أمو",
+            "جدي",
+            "عمي",
+            "خال",
+            "نصف",
+            "ربع",
+            "ثلث",
+            "خمس",
+            "سدس",
+            "سبع",
+            "ثمن",
+            "تسع",
+            "عشر",
+            "مئة",
+            "ألف",
+            "مليون",
+            "مليار",
+            "صفر",
+            "واحد",
+            "اثنان",
+            "ثلاث",
+            "أربع",
+            "خمس",
+            "ستت",
+            "سبع",
+            "ثمان",
+            "تسع",
+            "عشر",
+            "أول",
+            "ثان",
+            "ثالث",
+            "رابع",
+            "خامس",
+            "سادس",
+            "سابع",
+            "ثامن",
+            "تاسع",
+            "عاشر",
+            "أبيض",
+            "أسود",
+            "أحمر",
+            "أخضر",
+            "أزرق",
+            "أصفر",
+            "أسمر",
+            "أشقر",
+            "حلو",
+            "مر",
+            "حامض",
+            "مالح",
+            "حار",
+            "بارد",
+            "دافي",
+            "جاف",
+            "رطب",
+            "لين",
+            "قاس",
+            "صلب",
+            "رخو",
+            "سهل",
+            "صعب",
+            "بسيط",
+            "معقد",
+            "واضح",
+            "خفي",
+            "ظاهر",
+            "باطن"
+        ];
+
+        // --- 2. Engine Logic ---
+
+        // Pre-defined dense puzzle templates (1 = letter cell, 0 = empty)
+        // Designed for Arabic dictionary where most words are 2-4 letters long
+        const puzzleTemplates = {
+            easy: [
+                [
+                    [1, 1, 1, 1, 0],
+                    [1, 0, 0, 1, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 1, 0, 0, 1],
+                    [0, 1, 1, 1, 1]
+                ],
+                [
+                    [0, 1, 1, 1, 1],
+                    [0, 1, 0, 0, 1],
+                    [1, 1, 1, 1, 1],
+                    [1, 0, 0, 1, 0],
+                    [1, 1, 1, 1, 0]
+                ]
             ],
-            "حيوانات": [
-                {"word": "اسد", "clue": "ملك الغابة"},
-                {"word": "نمر", "clue": "حيوان مفترس مخطط"},
-                {"word": "فيل", "clue": "أضخم الحيوانات البرية"},
-                {"word": "قرد", "clue": "حيوان ذكي يحب الموز"},
-                {"word": "كلب", "clue": "حيوان أليف وفي ينبح"},
-                {"word": "قطة", "clue": "حيوان أليف يحب اللعب"},
-                {"word": "حصان", "clue": "حيوان يستخدم للركوب والسباق"},
-                {"word": "جمل", "clue": "سفينة الصحراء"},
-                {"word": "بقرة", "clue": "حيوان نأخذ منه الحليب"},
-                {"word": "غزال", "clue": "حيوان رشيق وجميل"}
+            medium: [
+                [
+                    [1, 1, 1, 1, 0, 0],
+                    [1, 0, 0, 1, 1, 1],
+                    [1, 1, 1, 1, 0, 1],
+                    [0, 1, 0, 1, 1, 1],
+                    [1, 1, 1, 1, 0, 1],
+                    [0, 0, 1, 1, 1, 1]
+                ],
+                [
+                    [0, 0, 1, 1, 1, 1],
+                    [1, 1, 1, 0, 0, 1],
+                    [1, 0, 1, 1, 1, 1],
+                    [1, 1, 1, 0, 1, 0],
+                    [1, 0, 0, 1, 1, 1],
+                    [1, 1, 1, 1, 0, 0]
+                ]
             ],
-            "فواكه": [
-                {"word": "تفاح", "clue": "فاكهة حمراء أو خضراء"},
-                {"word": "موز", "clue": "فاكهة صفراء طويلة"},
-                {"word": "عنب", "clue": "فاكهة صغيرة تنمو في عناقيد"},
-                {"word": "برتقال", "clue": "فاكهة شتوية غنية بفيتامين سي"},
-                {"word": "بطيخ", "clue": "فاكهة صيفية كبيرة خضراء من الخارج وحمراء من الداخل"},
-                {"word": "خوخ", "clue": "فاكهة ذات نواة حجرية"},
-                {"word": "مانجو", "clue": "فاكهة استوائية لذيذة"},
-                {"word": "فراولة", "clue": "فاكهة حمراء صغيرة بذورها من الخارج"},
-                {"word": "رمان", "clue": "فاكهة خريفية تحتوي على بذور حمراء"},
-                {"word": "تمر", "clue": "فاكهة حلوة من النخيل"}
-            ],
-            "مهن": [
-                {"word": "طبيب", "clue": "يعالج المرضى"},
-                {"word": "مهندس", "clue": "يصمم ويبني المباني"},
-                {"word": "معلم", "clue": "يشرح الدروس للتلاميذ"},
-                {"word": "نجار", "clue": "يصنع الأثاث من الخشب"},
-                {"word": "حداد", "clue": "يشكل الحديد والمعادن"},
-                {"word": "خباز", "clue": "يصنع الخبز والمعجنات"},
-                {"word": "شرطي", "clue": "يحفظ الأمن والنظام"},
-                {"word": "طيار", "clue": "يقود الطائرة"},
-                {"word": "فلاح", "clue": "يزرع الأرض ويحصد المحصول"},
-                {"word": "قاضي", "clue": "يحكم بالعدل بين الناس"}
-            ],
-            "دول وعواصم": [
-                {"word": "مصر", "clue": "دولة عربية بها الأهرامات"},
-                {"word": "قاهرة", "clue": "عاصمة مصر"},
-                {"word": "سعودية", "clue": "دولة بها الحرمين الشريفين"},
-                {"word": "رياض", "clue": "عاصمة السعودية"},
-                {"word": "عراق", "clue": "بلاد الرافدين"},
-                {"word": "بغداد", "clue": "عاصمة العراق"},
-                {"word": "مغرب", "clue": "دولة عربية تقع في أقصى غرب شمال أفريقيا"},
-                {"word": "رباط", "clue": "عاصمة المغرب"},
-                {"word": "لبنان", "clue": "دولة عربية تشتهر بشجر الأرز"},
-                {"word": "بيروت", "clue": "عاصمة لبنان"}
+            large: [
+                [[1,1,1,1,0,1,1],[1,1,0,1,1,1,0],[1,0,1,1,1,0,1],[1,1,1,0,1,1,1],[1,0,1,1,1,0,1],[0,1,1,1,0,1,1],[1,1,0,1,1,1,1]],
+                [[1,1,1,1,0,1,1],[1,0,1,1,1,1,0],[1,1,0,1,1,1,1],[1,1,1,0,1,1,1],[1,1,1,1,0,1,1],[0,1,1,1,1,0,1],[1,1,0,1,1,1,1]]
             ]
         };
 
-        // --- 2. Engine Logic ---
+        const allWords = new Set([...Object.values(wordBank).flat(), ...fillerWords]);
+
+        class Dictionary {
+            constructor() {
+                this.byLength = {};
+            }
+            add(word) {
+                if (!this.byLength[word.length]) this.byLength[word.length] = [];
+                this.byLength[word.length].push(word);
+            }
+            getWords(length, pattern) {
+                let candidates = this.byLength[length] || [];
+                return candidates.filter(w => {
+                    for (let i = 0; i < length; i++) {
+                        if (pattern[i] !== ' ' && pattern[i] !== w[i]) return false;
+                    }
+                    return true;
+                });
+            }
+        }
+
+        const dict = new Dictionary();
+        Array.from(allWords).forEach(w => dict.add(w));
+
         function shuffle(array) {
             let arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
@@ -286,147 +677,167 @@
             return arr;
         }
 
-        class CrosswordGenerator {
-            constructor(subject, maxRows, maxCols) {
-                this.subject = subject;
-                this.wordsData = shuffle([...wordBank[subject]]);
-                this.maxRows = maxRows;
-                this.maxCols = maxCols;
-                this.grid = Array.from({ length: maxRows }, () => Array(maxCols).fill(' '));
-                this.placedWords = [];
-            }
+        class DenseCrosswordGenerator {
+            constructor(template, subject) {
+                this.template = template;
+                this.rows = template.length;
+                this.cols = template[0].length;
+                this.grid = template.map(row => row.map(val => val ? ' ' : null));
+                this.subjectWords = wordBank[subject] || [];
 
-            canPlaceWord(word, startRow, startCol, isHorizontal) {
-                if (startRow < 0 || startCol < 0) return false;
-
-                if (isHorizontal) {
-                    if (startCol + word.length > this.maxCols) return false;
-                } else {
-                    if (startRow + word.length > this.maxRows) return false;
-                }
-
-                let intersects = false;
-
-                for (let i = 0; i < word.length; i++) {
-                    const r = isHorizontal ? startRow : startRow + i;
-                    const c = isHorizontal ? startCol + i : startCol;
-
-                    const currentCell = this.grid[r][c];
-
-                    if (currentCell !== ' ' && currentCell !== word[i]) {
-                        return false;
-                    }
-
-                    if (currentCell === word[i]) {
-                        intersects = true;
-                    } else {
-                        if (isHorizontal) {
-                            if (r > 0 && this.grid[r - 1][c] !== ' ') return false;
-                            if (r < this.maxRows - 1 && this.grid[r + 1][c] !== ' ') return false;
+                this.slots = [];
+                // Horizontal slots
+                for (let r = 0; r < this.rows; r++) {
+                    let startC = -1;
+                    for (let c = 0; c <= this.cols; c++) {
+                        if (c < this.cols && this.grid[r][c] !== null) {
+                            if (startC === -1) startC = c;
                         } else {
-                            if (c > 0 && this.grid[r][c - 1] !== ' ') return false;
-                            if (c < this.maxCols - 1 && this.grid[r][c + 1] !== ' ') return false;
+                            if (startC !== -1 && c - startC > 1) {
+                                this.slots.push({ r, c: startC, len: c - startC, dir: 'H' });
+                            }
+                            startC = -1;
+                        }
+                    }
+                }
+                // Vertical slots
+                for (let c = 0; c < this.cols; c++) {
+                    let startR = -1;
+                    for (let r = 0; r <= this.rows; r++) {
+                        if (r < this.rows && this.grid[r][c] !== null) {
+                            if (startR === -1) startR = r;
+                        } else {
+                            if (startR !== -1 && r - startR > 1) {
+                                this.slots.push({ r: startR, c, len: r - startR, dir: 'V' });
+                            }
+                            startR = -1;
                         }
                     }
                 }
 
-                if (isHorizontal) {
-                    if (startCol > 0 && this.grid[startRow][startCol - 1] !== ' ') return false;
-                    if (startCol + word.length < this.maxCols && this.grid[startRow][startCol + word.length] !== ' ') return false;
-                } else {
-                    if (startRow > 0 && this.grid[startRow - 1][startCol] !== ' ') return false;
-                    if (startRow + word.length < this.maxRows && this.grid[startRow + word.length][startCol] !== ' ') return false;
-                }
-
-                return this.placedWords.length === 0 ? true : intersects;
+                // Sort slots by number of intersections to fail fast
+                this.slots.sort((a, b) => {
+                    let aScore = this.getIntersections(a);
+                    let bScore = this.getIntersections(b);
+                    if (aScore !== bScore) return bScore - aScore;
+                    return b.len - a.len;
+                });
             }
 
-            placeWord(wordObj, startRow, startCol, isHorizontal) {
-                const { word } = wordObj;
-                for (let i = 0; i < word.length; i++) {
-                    const r = isHorizontal ? startRow : startRow + i;
-                    const c = isHorizontal ? startCol + i : startCol;
+            getIntersections(slot) {
+                let score = 0;
+                for (let i = 0; i < slot.len; i++) {
+                    let r = slot.dir === 'H' ? slot.r : slot.r + i;
+                    let c = slot.dir === 'H' ? slot.c + i : slot.c;
+                    score++;
+                }
+                return score;
+            }
+
+            getPattern(slot) {
+                let pattern = [];
+                for (let i = 0; i < slot.len; i++) {
+                    let r = slot.dir === 'H' ? slot.r : slot.r + i;
+                    let c = slot.dir === 'H' ? slot.c + i : slot.c;
+                    pattern.push(this.grid[r][c]);
+                }
+                return pattern;
+            }
+
+            getCandidates(pattern, len) {
+                let all = dict.getWords(len, pattern);
+                return all.filter(w => {
+                    if (w.length !== len) return false;
+                    for (let i = 0; i < len; i++) {
+                        if (pattern[i] !== ' ' && pattern[i] !== '.' && pattern[i] !== w[i]) return false;
+                    }
+                    return true;
+                });
+            }
+
+            placeWord(slot, word) {
+                let backups = [];
+                for (let i = 0; i < slot.len; i++) {
+                    let r = slot.dir === 'H' ? slot.r : slot.r + i;
+                    let c = slot.dir === 'H' ? slot.c + i : slot.c;
+                    backups.push({ r, c, old: this.grid[r][c] });
                     this.grid[r][c] = word[i];
                 }
-                this.placedWords.push({ word, r: startRow, c: startCol, isHorizontal });
+                return backups;
+            }
+
+            solve(slotsRemaining, usedWords, themeWordsUsed, attemptLimit) {
+                if (slotsRemaining.length === 0) {
+                    return themeWordsUsed >= 1;
+                }
+
+                if (attemptLimit.count > 50000) return false;
+                attemptLimit.count++;
+
+                let bestSlotIdx = -1;
+                let minCandidates = Infinity;
+                let bestCandidates = [];
+
+                for (let i = 0; i < slotsRemaining.length; i++) {
+                    let slot = slotsRemaining[i];
+                    let pattern = this.getPattern(slot);
+                    let cands = this.getCandidates(pattern, slot.len);
+                    cands = cands.filter(c => !usedWords.has(c));
+
+                    if (cands.length === 0) return false;
+
+                    if (cands.length < minCandidates) {
+                        minCandidates = cands.length;
+                        bestSlotIdx = i;
+                        bestCandidates = cands;
+                    }
+                }
+
+                if (bestSlotIdx === -1) return false;
+
+                let slot = slotsRemaining[bestSlotIdx];
+                let nextSlots = slotsRemaining.slice();
+                nextSlots.splice(bestSlotIdx, 1);
+
+                bestCandidates.sort(() => Math.random() - 0.5);
+                if (themeWordsUsed === 0) {
+                    bestCandidates.sort((a, b) => {
+                        let aTheme = this.subjectWords.includes(a) ? 1 : 0;
+                        let bTheme = this.subjectWords.includes(b) ? 1 : 0;
+                        return bTheme - aTheme;
+                    });
+                }
+
+                for (let word of bestCandidates) {
+                    let backups = this.placeWord(slot, word);
+                    usedWords.add(word);
+                    let isTheme = this.subjectWords.includes(word);
+
+                    if (this.solve(nextSlots, usedWords, themeWordsUsed + (isTheme ? 1 : 0), attemptLimit)) {
+                        return true;
+                    }
+
+                    usedWords.delete(word);
+                    for (let b of backups) {
+                        this.grid[b.r][b.c] = b.old;
+                    }
+                }
+                return false;
             }
 
             generate() {
-                if (this.wordsData.length === 0) return false;
-
-                let firstWordObj = null;
-                let startRow = Math.floor(this.maxRows / 2);
-                let startCol = 0;
-                let placedFirst = false;
-
-                while (this.wordsData.length > 0 && !placedFirst) {
-                    firstWordObj = this.wordsData.shift();
-                    startCol = Math.max(0, Math.floor((this.maxCols - firstWordObj.word.length) / 2));
-
-                    if (this.canPlaceWord(firstWordObj.word, startRow, startCol, true)) {
-                        this.placeWord(firstWordObj, startRow, startCol, true);
-                        placedFirst = true;
-                    } else if (this.canPlaceWord(firstWordObj.word, 0, 0, true)) {
-                        this.placeWord(firstWordObj, 0, 0, true);
-                        placedFirst = true;
-                    } else {
-                        this.wordsData.push(firstWordObj);
-                    }
-
-                    if (!placedFirst && this.wordsData.indexOf(firstWordObj) === 0) break;
-                }
-
-                if (!placedFirst) return false;
-
-                let attempts = 0;
-                let intersectionsCount = 0;
-
-                while (attempts < 200 && this.wordsData.length > 0) {
-                    const wordObj = this.wordsData.shift();
-
-                    const placed = this.tryPlaceIntersecting(wordObj);
-                    if (placed) {
-                        attempts = 0;
-                        intersectionsCount++;
-                    } else {
-                        this.wordsData.push(wordObj);
-                        attempts++;
-                    }
-
-                    if (this.placedWords.length >= 15) break;
-                }
-
-                return this.placedWords.length >= 5 && intersectionsCount >= 4;
-            }
-
-            tryPlaceIntersecting(wordObj) {
-                const { word } = wordObj;
-                const possiblePlacements = [];
-
-                for (let r = 0; r < this.maxRows; r++) {
-                    for (let c = 0; c < this.maxCols; c++) {
-                        if (this.grid[r][c] !== ' ' && word.includes(this.grid[r][c])) {
-                            for (let i = 0; i < word.length; i++) {
-                                if (word[i] === this.grid[r][c]) {
-                                    if (this.canPlaceWord(word, r, c - i, true)) {
-                                        possiblePlacements.push({ r, c: c - i, isHoriz: true });
-                                    }
-                                    if (this.canPlaceWord(word, r - i, c, false)) {
-                                        possiblePlacements.push({ r: r - i, c, isHoriz: false });
-                                    }
-                                }
-                            }
+                let attemptLimit = { count: 0 };
+                let used = new Set();
+                let success = this.solve([...this.slots], used, 0, attemptLimit);
+                if (success) {
+                    // Convert nulls to actual ' ' for compatibility
+                    for (let r = 0; r < this.rows; r++) {
+                        for (let c = 0; c < this.cols; c++) {
+                            if (this.grid[r][c] === null) this.grid[r][c] = ' ';
                         }
                     }
                 }
-
-                if (possiblePlacements.length > 0) {
-                    const placement = possiblePlacements[Math.floor(Math.random() * possiblePlacements.length)];
-                    this.placeWord(wordObj, placement.r, placement.c, placement.isHoriz);
-                    return true;
-                }
-
-                return false;
+                return success ? this.grid : null;
             }
 
             getSolution() {
@@ -436,9 +847,15 @@
             }
 
             generateRegions(minSize = 4, maxSize = 6) {
+                // Heuristics for Knotwords:
+                // Rule 1: A region should never contain a full word
+                // Rule 2: Span intersections (L-shapes, T-shapes)
+                // Rule 3: Letter balance (mix of vowels/high-freq and consonants)
+                // Rule 4: At least one anchor region (2-3 cells) near an edge. Max size 5-6 cells.
+
                 const filledCells = [];
-                for (let r = 0; r < this.maxRows; r++) {
-                    for (let c = 0; c < this.maxCols; c++) {
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
                         if (this.grid[r][c] !== ' ') {
                             filledCells.push([r, c]);
                         }
@@ -455,17 +872,33 @@
                     return adj.filter(([nr, nc]) => unassigned.has(`${nr},${nc}`));
                 };
 
+                // Vowels and high frequency letters to balance
+                const helpfulLetters = new Set(['ا', 'و', 'ي', 'ة', 'م', 'ن', 'ت']);
+
                 let regionIdCounter = 0;
+                let hasAnchor = false;
 
                 while (unassigned.size > 0) {
-                    const startStr = Array.from(unassigned)[0];
+                    // Pick a random unassigned cell
+                    const unassignedArr = Array.from(unassigned);
+                    const startStr = unassignedArr[Math.floor(Math.random() * unassignedArr.length)];
                     const [sr, sc] = startStr.split(',').map(Number);
 
                     const currentRegionCells = [[sr, sc]];
                     unassigned.delete(startStr);
 
-                    const targetSize = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+                    // Determine target size for this region
+                    let targetSize;
+                    if (!hasAnchor && unassignedArr.length < filledCells.length / 2) {
+                        targetSize = Math.floor(Math.random() * 2) + 2; // 2 or 3 cells
+                        hasAnchor = true;
+                    } else {
+                        targetSize = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+                    }
 
+                    let helpfulCount = helpfulLetters.has(this.grid[sr][sc]) ? 1 : 0;
+
+                    // Grow region
                     while (currentRegionCells.length < targetSize) {
                         const neighbors = [];
                         currentRegionCells.forEach(([cr, cc]) => {
@@ -474,32 +907,72 @@
 
                         if (neighbors.length === 0) break;
 
-                        const nextCell = neighbors[Math.floor(Math.random() * neighbors.length)];
-                        currentRegionCells.push(nextCell);
-                        unassigned.delete(`${nextCell[0]},${nextCell[1]}`);
-                    }
+                        // Prioritize neighbors that change direction (cornering) to avoid straight lines
+                        // and neighbors that add helpful letters if we don't have enough
+                        let bestNeighbor = null;
+                        let bestScore = -Infinity;
 
-                    const regionLetters = currentRegionCells.map(([r, c]) => this.grid[r][c]).sort();
+                        for (let [nr, nc] of neighbors) {
+                            let score = Math.random(); // Base randomness
+
+                            // Check straight lines
+                            let isStraightLine = false;
+                            if (currentRegionCells.length >= 2) {
+                                const allSameRow = currentRegionCells.every(cell => cell[0] === nr) || currentRegionCells.every(cell => cell[0] === currentRegionCells[0][0]) && currentRegionCells[0][0] === nr;
+                                const allSameCol = currentRegionCells.every(cell => cell[1] === nc) || currentRegionCells.every(cell => cell[1] === currentRegionCells[0][1]) && currentRegionCells[0][1] === nc;
+                                if (allSameRow || allSameCol) {
+                                    isStraightLine = true;
+                                    score -= 2; // Penalize straight lines
+                                } else {
+                                    score += 2; // Reward corners/L-shapes
+                                }
+                            }
+
+                            // Check full word rule: roughly, if a region is becoming a long straight line, it might contain a full word.
+                            // The straight line penalty helps prevent this organically.
+
+                            // Check letter balance
+                            let isHelpful = helpfulLetters.has(this.grid[nr][nc]);
+                            if (helpfulCount === 0 && isHelpful) {
+                                score += 3; // Strongly prefer helpful letters if we have none
+                            } else if (helpfulCount > 1 && isHelpful) {
+                                score -= 1; // Don't hoard helpful letters
+                            }
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestNeighbor = [nr, nc];
+                            }
+                        }
+
+                        if (!bestNeighbor) bestNeighbor = neighbors[0]; // fallback
+
+                        currentRegionCells.push(bestNeighbor);
+                        unassigned.delete(`${bestNeighbor[0]},${bestNeighbor[1]}`);
+                        if (helpfulLetters.has(this.grid[bestNeighbor[0]][bestNeighbor[1]])) helpfulCount++;
+                    }
 
                     regions.push({
                         id: `r${regionIdCounter++}`,
                         cells: currentRegionCells,
-                        letters: regionLetters
+                        letters: currentRegionCells.map(([r, c]) => this.grid[r][c]).sort()
                     });
                 }
 
+                // Consolidation: Merge tiny regions (if any got stranded)
                 let consolidated = true;
                 while (consolidated) {
                     consolidated = false;
                     for (let i = 0; i < regions.length; i++) {
-                        if (regions[i].cells.length < minSize) {
+                        // If it's the only anchor region, maybe let it stay small, but if there are multiple or it's size 1
+                        if (regions[i].cells.length < 2 || (regions[i].cells.length < 4 && regions.length > 5 && Math.random() > 0.5)) {
                             const smallRegion = regions[i];
                             let merged = false;
                             for (const [r, c] of smallRegion.cells) {
                                 const adj = [[r-1, c], [r+1, c], [r, c-1], [r, c+1]];
                                 for (const [nr, nc] of adj) {
                                     const adjRegion = regions.find(reg => reg.id !== smallRegion.id && reg.cells.some(([rr, cc]) => rr === nr && cc === nc));
-                                    if (adjRegion && adjRegion.cells.length < maxSize + 2) {
+                                    if (adjRegion && adjRegion.cells.length + smallRegion.cells.length <= maxSize + 1) {
                                         adjRegion.cells.push(...smallRegion.cells);
                                         adjRegion.letters.push(...smallRegion.letters);
                                         adjRegion.letters.sort();
@@ -520,34 +993,38 @@
         }
 
         // --- 3. Wrapper ---
-        function generateGamePuzzle(subject, rows, cols) {
-            const gen = new CrosswordGenerator(subject, rows, cols);
-            const success = gen.generate();
+        function generateGamePuzzle(subject, difficulty) {
+            const templates = puzzleTemplates[difficulty];
+            // Try different templates until one succeeds
+            for (let i = 0; i < 50; i++) {
+                const template = shuffle(templates)[0];
+                const gen = new DenseCrosswordGenerator(template, subject);
+                const success = gen.generate();
 
-            if (!success) {
-                return null;
+                if (success) {
+                    const solutionData = gen.getSolution();
+                    const regions = gen.generateRegions(4, 6); // We will update this heuristic later
+
+                    return {
+                        theme: subject,
+                        rows: gen.rows,
+                        cols: gen.cols,
+                        solution: solutionData.grid,
+                        regions: regions
+                    };
+                }
             }
-
-            const solutionData = gen.getSolution();
-            const regions = gen.generateRegions(4, 6);
-
-            return {
-                theme: subject,
-                rows: rows,
-                cols: cols,
-                solution: solutionData.grid,
-                regions: regions
-            };
+            return null;
         }
 
-        function getValidPuzzle(subject, rows, cols) {
+        function getValidPuzzle(subject, difficulty) {
             let puzzle = null;
             let attempts = 0;
-            while (!puzzle && attempts < 1000) {
-                puzzle = generateGamePuzzle(subject, rows, cols);
+            while (!puzzle && attempts < 20) {
+                puzzle = generateGamePuzzle(subject, difficulty);
                 attempts++;
             }
-            return puzzle;
+            return puzzle || { error: "Failed to generate puzzle" };
         }
 
         // --- 4. UI Events ---
@@ -557,9 +1034,9 @@
             const randomSubject = () => subjects[Math.floor(Math.random() * subjects.length)];
 
             const newPuzzles = {
-                easy: getValidPuzzle(randomSubject(), 10, 10),
-                medium: getValidPuzzle(randomSubject(), 10, 10),
-                large: getValidPuzzle(randomSubject(), 10, 10)
+                easy: getValidPuzzle(randomSubject(), "easy"),
+                medium: getValidPuzzle(randomSubject(), "medium"),
+                large: getValidPuzzle(randomSubject(), "large")
             };
 
             const jsonStr = JSON.stringify(newPuzzles, null, 2);
@@ -601,14 +1078,27 @@
                 const card = document.createElement('div');
                 card.className = 'puzzle-card';
 
+                if (puzzle.error) {
+                    const title = document.createElement('h2');
+                    title.innerText = `${level.title} - ${puzzle.error}`;
+                    card.appendChild(title);
+                    container.appendChild(card);
+                    return;
+                }
+
                 const title = document.createElement('h2');
                 title.innerText = `${level.title} - الموضوع: ${puzzle.theme}`;
                 card.appendChild(title);
 
                 const gridContainer = document.createElement('div');
                 gridContainer.className = 'puzzle-grid';
-                gridContainer.style.gridTemplateColumns = `repeat(${puzzle.cols}, 50px)`;
-                gridContainer.style.gridTemplateRows = `repeat(${puzzle.rows}, 50px)`;
+
+                // Adjust for dynamic bounding box sizing
+                const cellPx = 50;
+                gridContainer.style.gridTemplateColumns = `repeat(${puzzle.cols}, ${cellPx}px)`;
+                gridContainer.style.gridTemplateRows = `repeat(${puzzle.rows}, ${cellPx}px)`;
+                gridContainer.style.width = `${puzzle.cols * cellPx}px`;
+                gridContainer.style.height = `${puzzle.rows * cellPx}px`;
 
                 // Map cells to regions for borders and identify the top-rightmost cell for hints
                 const cellToRegion = {};
@@ -654,11 +1144,12 @@
                                 cellDiv.appendChild(charSpan);
 
                                 // Add borders to define regions visually
-                                if (r === 0 || cellToRegion[`${r-1},${c}`] !== region || puzzle.solution[r-1]?.[c] === ' ') cellDiv.classList.add('border-top-thick');
-                                if (r === puzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region || puzzle.solution[r+1]?.[c] === ' ') cellDiv.classList.add('border-bottom-thick');
+                                // Note: Since the CSS gap is 0, we must ensure empty cells adjacent to filled cells don't hide the border.
+                                if (r === 0 || cellToRegion[`${r-1},${c}`] !== region) cellDiv.classList.add('border-top-thick');
+                                if (r === puzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region) cellDiv.classList.add('border-bottom-thick');
                                 // Note: RTL means Left is Right visually, but we apply border based on index
-                                if (c === 0 || cellToRegion[`${r},${c-1}`] !== region || puzzle.solution[r][c-1] === ' ') cellDiv.classList.add('border-right-thick'); // Because dir=rtl, index 0 is on the right visually
-                                if (c === puzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region || puzzle.solution[r][c+1] === ' ') cellDiv.classList.add('border-left-thick');
+                                if (c === 0 || cellToRegion[`${r},${c-1}`] !== region) cellDiv.classList.add('border-right-thick'); // Because dir=rtl, index 0 is on the right visually
+                                if (c === puzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region) cellDiv.classList.add('border-left-thick');
                             }
                         }
 
