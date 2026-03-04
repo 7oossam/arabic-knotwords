@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد الألغاز - لعبة الكلمات العربية</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #btn-copy {
+            background-color: #27ae60;
+        }
+
+        #btn-copy:hover {
+            background-color: #2ecc71;
+        }
+
+        .output-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        pre {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #2c3e50;
+            direction: ltr; /* JSON is LTR */
+            text-align: left;
+            white-space: pre-wrap; /* allow wrapping on mobile */
+        }
+
+        .toast {
+            visibility: hidden;
+            min-width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            position: fixed;
+            z-index: 1;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @-webkit-keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+
+    <h1>مولد ألغاز الكلمات المتقاطعة</h1>
+
+    <div class="controls">
+        <button id="btn-generate">توليد ألغاز جديدة 🎲</button>
+        <button id="btn-copy">نسخ كود JSON 📋</button>
+    </div>
+
+    <div class="output-container">
+        <pre id="output-json">اضغط على زر التوليد لإنشاء الألغاز...</pre>
+    </div>
+
+    <div id="toast" class="toast">تم نسخ الكود!</div>
+
+    <script>
+        // --- 1. Word Bank ---
+        const wordBank = {
+            "مدرسة": [
+                {"word": "مكتب", "clue": "مكان للدراسة والعمل"},
+                {"word": "علم", "clue": "راية أو معرفة"},
+                {"word": "كتاب", "clue": "خير جليس في الزمان"},
+                {"word": "قلم", "clue": "أداة للكتابة"},
+                {"word": "ورق", "clue": "مادة للكتابة عليها"},
+                {"word": "درس", "clue": "حصة تعليمية"},
+                {"word": "طالب", "clue": "يتلقى العلم في المدرسة"},
+                {"word": "معلم", "clue": "يشرح الدروس للتلاميذ"},
+                {"word": "فصل", "clue": "حجرة دراسية في المدرسة"},
+                {"word": "لوح", "clue": "سبورة يكتب عليها المعلم"},
+                {"word": "دفتر", "clue": "كراسة لتدوين الملاحظات"},
+                {"word": "نجاح", "clue": "نتيجة الاجتهاد والتفوق"}
+            ],
+            "حيوانات": [
+                {"word": "اسد", "clue": "ملك الغابة"},
+                {"word": "نمر", "clue": "حيوان مفترس مخطط"},
+                {"word": "فيل", "clue": "أضخم الحيوانات البرية"},
+                {"word": "قرد", "clue": "حيوان ذكي يحب الموز"},
+                {"word": "كلب", "clue": "حيوان أليف وفي ينبح"},
+                {"word": "قطة", "clue": "حيوان أليف يحب اللعب"},
+                {"word": "حصان", "clue": "حيوان يستخدم للركوب والسباق"},
+                {"word": "جمل", "clue": "سفينة الصحراء"},
+                {"word": "بقرة", "clue": "حيوان نأخذ منه الحليب"},
+                {"word": "غزال", "clue": "حيوان رشيق وجميل"}
+            ],
+            "فواكه": [
+                {"word": "تفاح", "clue": "فاكهة حمراء أو خضراء"},
+                {"word": "موز", "clue": "فاكهة صفراء طويلة"},
+                {"word": "عنب", "clue": "فاكهة صغيرة تنمو في عناقيد"},
+                {"word": "برتقال", "clue": "فاكهة شتوية غنية بفيتامين سي"},
+                {"word": "بطيخ", "clue": "فاكهة صيفية كبيرة خضراء من الخارج وحمراء من الداخل"},
+                {"word": "خوخ", "clue": "فاكهة ذات نواة حجرية"},
+                {"word": "مانجو", "clue": "فاكهة استوائية لذيذة"},
+                {"word": "فراولة", "clue": "فاكهة حمراء صغيرة بذورها من الخارج"},
+                {"word": "رمان", "clue": "فاكهة خريفية تحتوي على بذور حمراء"},
+                {"word": "تمر", "clue": "فاكهة حلوة من النخيل"}
+            ],
+            "مهن": [
+                {"word": "طبيب", "clue": "يعالج المرضى"},
+                {"word": "مهندس", "clue": "يصمم ويبني المباني"},
+                {"word": "معلم", "clue": "يشرح الدروس للتلاميذ"},
+                {"word": "نجار", "clue": "يصنع الأثاث من الخشب"},
+                {"word": "حداد", "clue": "يشكل الحديد والمعادن"},
+                {"word": "خباز", "clue": "يصنع الخبز والمعجنات"},
+                {"word": "شرطي", "clue": "يحفظ الأمن والنظام"},
+                {"word": "طيار", "clue": "يقود الطائرة"},
+                {"word": "فلاح", "clue": "يزرع الأرض ويحصد المحصول"},
+                {"word": "قاضي", "clue": "يحكم بالعدل بين الناس"}
+            ],
+            "دول وعواصم": [
+                {"word": "مصر", "clue": "دولة عربية بها الأهرامات"},
+                {"word": "قاهرة", "clue": "عاصمة مصر"},
+                {"word": "سعودية", "clue": "دولة بها الحرمين الشريفين"},
+                {"word": "رياض", "clue": "عاصمة السعودية"},
+                {"word": "عراق", "clue": "بلاد الرافدين"},
+                {"word": "بغداد", "clue": "عاصمة العراق"},
+                {"word": "مغرب", "clue": "دولة عربية تقع في أقصى غرب شمال أفريقيا"},
+                {"word": "رباط", "clue": "عاصمة المغرب"},
+                {"word": "لبنان", "clue": "دولة عربية تشتهر بشجر الأرز"},
+                {"word": "بيروت", "clue": "عاصمة لبنان"}
+            ]
+        };
+
+        // --- 2. Engine Logic ---
+        function shuffle(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        class CrosswordGenerator {
+            constructor(subject, maxRows, maxCols) {
+                this.subject = subject;
+                this.wordsData = shuffle([...wordBank[subject]]);
+                this.maxRows = maxRows;
+                this.maxCols = maxCols;
+                this.grid = Array.from({ length: maxRows }, () => Array(maxCols).fill(' '));
+                this.placedWords = [];
+                this.rowCluesMap = {};
+                this.colCluesMap = {};
+            }
+
+            canPlaceWord(word, startRow, startCol, isHorizontal) {
+                if (startRow < 0 || startCol < 0) return false;
+
+                if (isHorizontal) {
+                    if (startCol + word.length > this.maxCols) return false;
+                } else {
+                    if (startRow + word.length > this.maxRows) return false;
+                }
+
+                let intersects = false;
+
+                for (let i = 0; i < word.length; i++) {
+                    const r = isHorizontal ? startRow : startRow + i;
+                    const c = isHorizontal ? startCol + i : startCol;
+
+                    const currentCell = this.grid[r][c];
+
+                    if (currentCell !== ' ' && currentCell !== word[i]) {
+                        return false;
+                    }
+
+                    if (currentCell === word[i]) {
+                        intersects = true;
+                    } else {
+                        if (isHorizontal) {
+                            if (r > 0 && this.grid[r - 1][c] !== ' ') return false;
+                            if (r < this.maxRows - 1 && this.grid[r + 1][c] !== ' ') return false;
+                        } else {
+                            if (c > 0 && this.grid[r][c - 1] !== ' ') return false;
+                            if (c < this.maxCols - 1 && this.grid[r][c + 1] !== ' ') return false;
+                        }
+                    }
+                }
+
+                if (isHorizontal) {
+                    if (startCol > 0 && this.grid[startRow][startCol - 1] !== ' ') return false;
+                    if (startCol + word.length < this.maxCols && this.grid[startRow][startCol + word.length] !== ' ') return false;
+                } else {
+                    if (startRow > 0 && this.grid[startRow - 1][startCol] !== ' ') return false;
+                    if (startRow + word.length < this.maxRows && this.grid[startRow + word.length][startCol] !== ' ') return false;
+                }
+
+                return this.placedWords.length === 0 ? true : intersects;
+            }
+
+            placeWord(wordObj, startRow, startCol, isHorizontal) {
+                const { word, clue } = wordObj;
+                for (let i = 0; i < word.length; i++) {
+                    const r = isHorizontal ? startRow : startRow + i;
+                    const c = isHorizontal ? startCol + i : startCol;
+                    this.grid[r][c] = word[i];
+
+                    if (isHorizontal && !this.rowCluesMap[r]) {
+                        this.rowCluesMap[r] = clue;
+                    } else if (!isHorizontal && !this.colCluesMap[c]) {
+                        this.colCluesMap[c] = clue;
+                    }
+                }
+                this.placedWords.push({ word, r: startRow, c: startCol, isHorizontal });
+            }
+
+            generate() {
+                if (this.wordsData.length === 0) return false;
+
+                let firstWordObj = null;
+                let startRow = Math.floor(this.maxRows / 2);
+                let startCol = 0;
+                let placedFirst = false;
+
+                while (this.wordsData.length > 0 && !placedFirst) {
+                    firstWordObj = this.wordsData.shift();
+                    startCol = Math.max(0, Math.floor((this.maxCols - firstWordObj.word.length) / 2));
+
+                    if (this.canPlaceWord(firstWordObj.word, startRow, startCol, true)) {
+                        this.placeWord(firstWordObj, startRow, startCol, true);
+                        placedFirst = true;
+                    } else if (this.canPlaceWord(firstWordObj.word, 0, 0, true)) {
+                        this.placeWord(firstWordObj, 0, 0, true);
+                        placedFirst = true;
+                    } else {
+                        this.wordsData.push(firstWordObj);
+                    }
+
+                    if (!placedFirst && this.wordsData.indexOf(firstWordObj) === 0) break;
+                }
+
+                if (!placedFirst) return false;
+
+                let attempts = 0;
+                while (attempts < 50 && this.wordsData.length > 0) {
+                    const wordObj = this.wordsData.shift();
+
+                    if (this.tryPlaceIntersecting(wordObj)) {
+                        attempts = 0;
+                    } else {
+                        this.wordsData.push(wordObj);
+                        attempts++;
+                    }
+
+                    if (this.placedWords.length >= 6) break;
+                }
+
+                return this.placedWords.length >= 2;
+            }
+
+            tryPlaceIntersecting(wordObj) {
+                const { word } = wordObj;
+                const possiblePlacements = [];
+
+                for (let r = 0; r < this.maxRows; r++) {
+                    for (let c = 0; c < this.maxCols; c++) {
+                        if (this.grid[r][c] !== ' ' && word.includes(this.grid[r][c])) {
+                            for (let i = 0; i < word.length; i++) {
+                                if (word[i] === this.grid[r][c]) {
+                                    if (this.canPlaceWord(word, r, c - i, true)) {
+                                        possiblePlacements.push({ r, c: c - i, isHoriz: true });
+                                    }
+                                    if (this.canPlaceWord(word, r - i, c, false)) {
+                                        possiblePlacements.push({ r: r - i, c, isHoriz: false });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (possiblePlacements.length > 0) {
+                    const placement = possiblePlacements[Math.floor(Math.random() * possiblePlacements.length)];
+                    this.placeWord(wordObj, placement.r, placement.c, placement.isHoriz);
+                    return true;
+                }
+
+                return false;
+            }
+
+            getSolution() {
+                return {
+                    grid: this.grid,
+                    rowClues: this.rowCluesMap,
+                    colClues: this.colCluesMap
+                };
+            }
+
+            generateRegions(minSize = 4, maxSize = 6) {
+                const filledCells = [];
+                for (let r = 0; r < this.maxRows; r++) {
+                    for (let c = 0; c < this.maxCols; c++) {
+                        if (this.grid[r][c] !== ' ') {
+                            filledCells.push([r, c]);
+                        }
+                    }
+                }
+
+                const regions = [];
+                const unassigned = new Set(filledCells.map(([r, c]) => `${r},${c}`));
+
+                const getAdjacent = (r, c) => {
+                    const adj = [
+                        [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
+                    ];
+                    return adj.filter(([nr, nc]) => unassigned.has(`${nr},${nc}`));
+                };
+
+                let regionIdCounter = 0;
+
+                while (unassigned.size > 0) {
+                    const startStr = Array.from(unassigned)[0];
+                    const [sr, sc] = startStr.split(',').map(Number);
+
+                    const currentRegionCells = [[sr, sc]];
+                    unassigned.delete(startStr);
+
+                    const targetSize = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+
+                    while (currentRegionCells.length < targetSize) {
+                        const neighbors = [];
+                        currentRegionCells.forEach(([cr, cc]) => {
+                            neighbors.push(...getAdjacent(cr, cc));
+                        });
+
+                        if (neighbors.length === 0) break;
+
+                        const nextCell = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        currentRegionCells.push(nextCell);
+                        unassigned.delete(`${nextCell[0]},${nextCell[1]}`);
+                    }
+
+                    regions.push({
+                        id: `r${regionIdCounter++}`,
+                        cells: currentRegionCells,
+                        letters: currentRegionCells.map(([r, c]) => this.grid[r][c]).sort(() => Math.random() - 0.5)
+                    });
+                }
+
+                let consolidated = true;
+                while (consolidated) {
+                    consolidated = false;
+                    for (let i = 0; i < regions.length; i++) {
+                        if (regions[i].cells.length < minSize) {
+                            const smallRegion = regions[i];
+                            let merged = false;
+                            for (const [r, c] of smallRegion.cells) {
+                                const adj = [[r-1, c], [r+1, c], [r, c-1], [r, c+1]];
+                                for (const [nr, nc] of adj) {
+                                    const adjRegion = regions.find(reg => reg.id !== smallRegion.id && reg.cells.some(([rr, cc]) => rr === nr && cc === nc));
+                                    if (adjRegion && adjRegion.cells.length < maxSize + 2) {
+                                        adjRegion.cells.push(...smallRegion.cells);
+                                        adjRegion.letters.push(...smallRegion.letters);
+                                        adjRegion.letters.sort(() => Math.random() - 0.5);
+                                        regions.splice(i, 1);
+                                        merged = true;
+                                        consolidated = true;
+                                        break;
+                                    }
+                                }
+                                if (merged) break;
+                            }
+                        }
+                    }
+                }
+
+                return regions;
+            }
+        }
+
+        // --- 3. Wrapper ---
+        function generateGamePuzzle(subject, rows, cols) {
+            const gen = new CrosswordGenerator(subject, rows, cols);
+            const success = gen.generate();
+
+            if (!success) {
+                return null;
+            }
+
+            const solutionData = gen.getSolution();
+            const regions = gen.generateRegions(4, 6);
+
+            const rowClues = Array(rows).fill(null);
+            for (const [r, clue] of Object.entries(solutionData.rowClues)) {
+                rowClues[r] = clue;
+            }
+
+            const colClues = Array(cols).fill(null);
+            for (const [c, clue] of Object.entries(solutionData.colClues)) {
+                colClues[c] = clue;
+            }
+
+            return {
+                theme: subject,
+                rows: rows,
+                cols: cols,
+                solution: solutionData.grid,
+                rowClues: rowClues,
+                colClues: colClues,
+                regions: regions
+            };
+        }
+
+        function getValidPuzzle(subject, rows, cols) {
+            let puzzle = null;
+            let attempts = 0;
+            while (!puzzle && attempts < 100) {
+                puzzle = generateGamePuzzle(subject, rows, cols);
+                attempts++;
+            }
+            return puzzle;
+        }
+
+        // --- 4. UI Events ---
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            const subjects = Object.keys(wordBank);
+            // Randomly pick subjects for variety
+            const randomSubject = () => subjects[Math.floor(Math.random() * subjects.length)];
+
+            const newPuzzles = {
+                easy: getValidPuzzle(randomSubject(), 4, 4),
+                medium: getValidPuzzle(randomSubject(), 5, 5),
+                large: getValidPuzzle(randomSubject(), 6, 6)
+            };
+
+            const jsonStr = JSON.stringify(newPuzzles, null, 2);
+            document.getElementById('output-json').innerText = jsonStr;
+        });
+
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const outputText = document.getElementById('output-json').innerText;
+            if (outputText === "اضغط على زر التوليد لإنشاء الألغاز...") return;
+
+            navigator.clipboard.writeText(outputText).then(() => {
+                const toast = document.getElementById('toast');
+                toast.className = "toast show";
+                setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                alert("حدث خطأ أثناء النسخ");
+            });
+        });
+
+        // Generate first puzzle on load automatically
+        document.getElementById('btn-generate').click();
+    </script>
+</body>
+</html>
