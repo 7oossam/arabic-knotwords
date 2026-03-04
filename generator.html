@@ -64,6 +64,83 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .visual-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .puzzle-card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .puzzle-card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            gap: 2px;
+            background-color: #ccc;
+            border: 2px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            width: 50px;
+            height: 50px;
+            position: relative;
+        }
+
+        .cell.empty {
+            background-color: transparent;
+        }
+
+        /* Thicker borders for regions */
+        .border-top-thick { border-top: 4px solid #333 !important; }
+        .border-bottom-thick { border-bottom: 4px solid #333 !important; }
+        .border-left-thick { border-left: 4px solid #333 !important; }
+        .border-right-thick { border-right: 4px solid #333 !important; }
+
+        .clues-section {
+            width: 100%;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .clues-section h3 {
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+
+        .clues-section ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+
+        .clues-section li {
+            margin-bottom: 4px;
         }
 
         pre {
@@ -128,7 +205,12 @@
         <button id="btn-copy">نسخ كود JSON 📋</button>
     </div>
 
+    <div class="visual-container" id="visual-puzzles">
+        <!-- Visual puzzles will be rendered here -->
+    </div>
+
     <div class="output-container">
+        <h2>كود JSON (للنسخ)</h2>
         <pre id="output-json">اضغط على زر التوليد لإنشاء الألغاز...</pre>
     </div>
 
@@ -505,6 +587,9 @@
 
             const jsonStr = JSON.stringify(newPuzzles, null, 2);
             document.getElementById('output-json').innerText = jsonStr;
+
+            // Render it visually
+            renderVisualPuzzles(newPuzzles);
         });
 
         document.getElementById('btn-copy').addEventListener('click', () => {
@@ -520,6 +605,92 @@
                 alert("حدث خطأ أثناء النسخ");
             });
         });
+
+        // --- 5. Visual Rendering ---
+        function renderVisualPuzzles(puzzlesObj) {
+            const container = document.getElementById('visual-puzzles');
+            container.innerHTML = ''; // clear
+
+            const levels = [
+                { key: 'easy', title: 'سهل (Easy)' },
+                { key: 'medium', title: 'متوسط (Medium)' },
+                { key: 'large', title: 'صعب (Large)' }
+            ];
+
+            levels.forEach(level => {
+                const puzzle = puzzlesObj[level.key];
+                if (!puzzle) return;
+
+                const card = document.createElement('div');
+                card.className = 'puzzle-card';
+
+                const title = document.createElement('h2');
+                title.innerText = `${level.title} - الموضوع: ${puzzle.theme}`;
+                card.appendChild(title);
+
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'puzzle-grid';
+                gridContainer.style.gridTemplateColumns = `repeat(${puzzle.cols}, 50px)`;
+                gridContainer.style.gridTemplateRows = `repeat(${puzzle.rows}, 50px)`;
+
+                // Map cells to regions for borders
+                const cellToRegion = {};
+                puzzle.regions.forEach(region => {
+                    region.cells.forEach(([r, c]) => {
+                        cellToRegion[`${r},${c}`] = region;
+                    });
+                });
+
+                for (let r = 0; r < puzzle.rows; r++) {
+                    for (let c = 0; c < puzzle.cols; c++) {
+                        const cellDiv = document.createElement('div');
+                        cellDiv.className = 'cell';
+
+                        const char = puzzle.solution[r][c];
+                        if (char === ' ') {
+                            cellDiv.classList.add('empty');
+                            cellDiv.style.border = 'none'; // hide borders for empty
+                        } else {
+                            cellDiv.innerText = char;
+                            const region = cellToRegion[`${r},${c}`];
+
+                            if (region) {
+                                // Add borders to define regions visually
+                                if (r === 0 || cellToRegion[`${r-1},${c}`] !== region || puzzle.solution[r-1]?.[c] === ' ') cellDiv.classList.add('border-top-thick');
+                                if (r === puzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region || puzzle.solution[r+1]?.[c] === ' ') cellDiv.classList.add('border-bottom-thick');
+                                // Note: RTL means Left is Right visually, but we apply border based on index
+                                if (c === 0 || cellToRegion[`${r},${c-1}`] !== region || puzzle.solution[r][c-1] === ' ') cellDiv.classList.add('border-right-thick'); // Because dir=rtl, index 0 is on the right visually
+                                if (c === puzzle.cols - 1 || cellToRegion[`${r},${c+1}`] !== region || puzzle.solution[r][c+1] === ' ') cellDiv.classList.add('border-left-thick');
+                            }
+                        }
+
+                        gridContainer.appendChild(cellDiv);
+                    }
+                }
+                card.appendChild(gridContainer);
+
+                // Add Clues
+                const cluesDiv = document.createElement('div');
+                cluesDiv.className = 'clues-section';
+
+                let rowCluesHtml = '<h3>تلميحات الصفوف:</h3><ul>';
+                puzzle.rowClues.forEach((clue, idx) => {
+                    if (clue) rowCluesHtml += `<li>الصف ${idx + 1}: ${clue}</li>`;
+                });
+                rowCluesHtml += '</ul>';
+
+                let colCluesHtml = '<h3>تلميحات الأعمدة:</h3><ul>';
+                puzzle.colClues.forEach((clue, idx) => {
+                    if (clue) colCluesHtml += `<li>العمود ${idx + 1}: ${clue}</li>`;
+                });
+                colCluesHtml += '</ul>';
+
+                cluesDiv.innerHTML = rowCluesHtml + colCluesHtml;
+                card.appendChild(cluesDiv);
+
+                container.appendChild(card);
+            });
+        }
 
         // Generate first puzzle on load automatically
         document.getElementById('btn-generate').click();
