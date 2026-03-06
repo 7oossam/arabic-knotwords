@@ -110,9 +110,6 @@ function generateCompactTemplate(minWords = 8) {
                     wordCount++;
                     if (len > 7) return null; // Reject long words
                 }
-                // Also reject 1-letter words here if they are not part of an intersecting word. We'll handle orphans via the cell check earlier, but that didn't catch a 1-letter word that crosses a word?
-                // Wait, if it crosses a word, it's just an intersection cell, not a 1-letter word. It's just a letter.
-                // Actually Knotwords has words reading across and down. If len=1, it doesn't count as a word. But we shouldn't have isolated 1-letter cells. Our orphan check handled that.
                 len = 0;
             }
         }
@@ -391,12 +388,31 @@ function generateRegion(grid) {
 }
 
 const wordClues = require('./word_clues.json');
+let trainingData = [];
+try {
+    trainingData = JSON.parse(fs.readFileSync('puzzle_training_data.json', 'utf8'));
+} catch (e) {
+    // If it doesn't exist yet, we just proceed.
+}
+
+const getPuzzleHash = (p) => JSON.stringify(p.solution) + '_' + JSON.stringify(p.words);
 
 function generateFinalPuzzles(count) {
     let finalBank = [];
-    while (finalBank.length < count) {
+    let attempts = 0;
+
+    // We can use training data to avoid generating exactly the same rejected puzzles over and over.
+    let rejectedHashes = new Set(trainingData.filter(t => !t.approved).map(t => t.hash));
+
+    while (finalBank.length < count && attempts < count * 100) {
+        attempts++;
         let p = generatePuzzleWithRetries(7); // At least 7 words
         if (p) {
+            if (rejectedHashes.has(getPuzzleHash(p))) {
+                console.log("Skipping a previously rejected puzzle layout/word combination...");
+                continue;
+            }
+
             let regions = generateRegion(p.grid);
 
             // Re-run if we didn't generate enough regions (e.g. less than wordCount - 2)

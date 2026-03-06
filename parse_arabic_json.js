@@ -8,7 +8,7 @@ function normalizeArabic(word) {
     if(!word) return "";
     return word
         .replace(/[\u064B-\u065F\u0670]/g, '') // remove tashkeel and tatweel
-        .replace(/[أإآء]/g, 'ا') // unify alefs (we don't unify hamza completely unless it's on an alef, actually knotwords usually unifies all Alefs to bare alef to be easier)
+        .replace(/[أإآ]/g, 'ا') // unify alefs to bare alef, do NOT convert independent hamza (ء) to alef
         .trim();
 }
 
@@ -34,7 +34,7 @@ for (const entry of data) {
     }
 
     let len = word.length;
-    if (len < 3 || len > 8) continue; // Only keep standard lengths
+    if (len < 2 || len > 8) continue; // Allow 2-letter words now
 
     if (!flatDictionary[len]) {
         flatDictionary[len] = new Set();

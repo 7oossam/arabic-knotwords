@@ -60,14 +60,14 @@
                     } else {
                         const region = cellToRegion[`${r},${c}`];
                         if (region) {
+                            cellDiv.innerText = char;
+
                             if (regionFirstCell[region.id] === `${r},${c}`) {
                                 const hintSpan = document.createElement('span');
                                 hintSpan.className = 'region-hint';
                                 hintSpan.innerText = region.letters.join('');
                                 cellDiv.appendChild(hintSpan);
                             }
-
-                            cellDiv.innerText = char;
 
                             if (r === 0 || cellToRegion[`${r-1},${c}`] !== region) cellDiv.classList.add('border-top-thick');
                             if (r === puzzle.rows - 1 || cellToRegion[`${r+1},${c}`] !== region) cellDiv.classList.add('border-bottom-thick');
