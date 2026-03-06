@@ -21,7 +21,7 @@ main { flex: 1; display: flex; justify-content: center; align-items: center; wid
 .border-right-thick { border-right: 4px solid #111 !important; }
 .border-bottom-thick { border-bottom: 4px solid #111 !important; }
 .border-left-thick { border-left: 4px solid #111 !important; }
-.region-hint { position: absolute; top: 2px; right: 4px; font-size: 0.7rem; color: #7f8c8d; white-space: pre-wrap; text-align: right; line-height: 1; pointer-events: none; }
+.region-hint { position: absolute; top: 2px; right: 4px; font-size: 0.65rem; color: #34495e; font-weight: 600; white-space: pre-wrap; text-align: right; line-height: 1; pointer-events: none; opacity: 0.9; }
 .hint-arrow { position: absolute; background: #f39c12; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 10; font-size: 1.2rem; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); width: 30px; height: 30px; transition: transform 0.2s; }
 .hint-arrow:hover { transform: scale(1.1); }
 .hint-arrow.row-arrow { right: -15px; top: 15px; } /* Pointing left in RTL means pointing "into" the row from right */
